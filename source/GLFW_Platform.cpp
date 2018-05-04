@@ -28,7 +28,7 @@ namespace platform
 	static glm::vec2 s_MousePt;
 	static bool s_isDragging = false;
 
-	static glm::mat4 s_View = glm::translate(glm::mat4(1), glm::vec3(0, 0, -3));
+	static glm::mat4 s_View = glm::translate(glm::mat4(1), glm::vec3(0, 0, -100));
 
 	static void scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
 	{
@@ -100,7 +100,7 @@ namespace platform
 
 		SetBounds(s_Width, s_Height);
 
-		s_Projection = glm::perspective(glm::radians(45.0f), static_cast<float>(s_Width) / static_cast<float>(s_Height), 0.1f, 100.f);
+		s_Projection = glm::perspective(glm::radians(45.0f), static_cast<float>(s_Width) / static_cast<float>(s_Height), 0.1f, 10000.f);
 	}
 
 	// glfw: whenever the window size changed (by OS or user resize) this callback function executes

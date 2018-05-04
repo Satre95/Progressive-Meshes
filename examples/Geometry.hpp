@@ -7,7 +7,7 @@
 struct Vertex {
 	Vertex(glm::vec4 _pos = glm::vec4(0, 0, 0, 1.f),
 			 glm::vec4 _norm = glm::vec4(0.f),
-			 glm::vec4 _color = glm::vec4(1.f)) :
+			 glm::vec4 _color = glm::vec4(1.f, 0.4f, 0.1f, 1.f)) :
 			mPos(_pos), mNormal(_norm), mColor(_color)
 			{}
 

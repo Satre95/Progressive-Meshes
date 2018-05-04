@@ -18,7 +18,6 @@ uniform DirectLight dLight2 = DirectLight(
 								vec3(1.f, 0.8f, 0.8f)
 								);
 
-uniform vec3 uDefaultFragColor;
 uniform bool uComputeShading = true;
 
 in vec3 FragPos;
@@ -31,7 +30,7 @@ void main()
 {
 	if(uComputeShading) {
 		// Ambient
-		const float ambientStrength = 0.2f;
+		const float ambientStrength = 0.5f;
 		vec3 ambient1 = ambientStrength * dLight1.ambient;
 		vec3 ambient2 = ambientStrength * dLight2.ambient;
 
@@ -45,10 +44,12 @@ void main()
 		diff = max(dot(norm, lightDir), 0.0);
 		vec3 diffuse2 = diff * dLight2.diffuse;
 
-		FragColor = vec4((ambient1 + ambient2 + diffuse1 + diffuse2) * uDefaultFragColor, 1.f);
+		FragColor = vec4((ambient1 + ambient2 + diffuse1 + diffuse2) * FragVertColor.xyz, 1.f);
+		FragColor.a = FragVertColor.a;
 	}
-	else
-	{
-		FragColor = vec4(uDefaultFragColor, 1.f);
+	else {
+		FragColor = FragVertColor;
 	}
+
+//	FragColor = vec4(FragNormal, 1.f);
 }

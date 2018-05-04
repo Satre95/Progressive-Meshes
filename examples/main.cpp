@@ -2,7 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
-
+#include <glm/gtc/type_ptr.hpp>
 #include "ProgMesh.hpp"
 #include "ProgModel.hpp"
 #include "ProgMesh.hpp"
@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
     }
 
     platform::InitPlatform();
-    platform::PLATFORM_WINDOW_REF window = platform::CreatePlatformWindow(800, 800, "Cube");
+    platform::PLATFORM_WINDOW_REF window = platform::CreatePlatformWindow(1024, 768, "Progressive Meshes");
     if (!window) {
         platform::TerminatePlatform();
         return -1;
@@ -49,12 +49,41 @@ int main(int argc, char *argv[]) {
     renderDevice->DestroyVertexShader(vertexShader);
     renderDevice->DestroyPixelShader(fragShader);
 
+    // Get shader parameters we will set it every frame
+    starforge::PipelineParam *uModelParam = pipeline->GetParam("uModel");
+    starforge::PipelineParam *uViewParam = pipeline->GetParam("uView");
+    starforge::PipelineParam *uProjectionParam = pipeline->GetParam("uProjection");
+    starforge::PipelineParam * uArcballParam = pipeline->GetParam("uArcball");
+    starforge::PipelineParam * uNormalMatParam = pipeline->GetParam("uNormalMatrix");
 
     ProgModel * aModel = new ProgModel(std::string(argv[1]));
     aModel->PrintInfo(std::cout);
+    for(auto & aMesh: aModel->GetMeshes()) {
+        aMesh.AllocateBuffers(*renderDevice);
+    }
+
+    renderDevice->SetPipeline(pipeline);
 
     // Main run loop
     while(platform::PollPlatformWindow(window)) {
+        renderDevice->Clear(0.2f, 0.3f, 0.3f);
+        renderDevice->SetPipeline(pipeline);
+        glm::mat4 arcball, view, projection;
+        platform::GetPlatformViewport(arcball, view, projection);
+
+        uArcballParam->SetAsMat4(glm::value_ptr(arcball));
+        uViewParam->SetAsMat4(glm::value_ptr(view));
+        uProjectionParam->SetAsMat4(glm::value_ptr(projection));
+
+        for(auto & aMesh: aModel->GetMeshes()) {
+            auto &modelMat = aMesh.GetModelMatrix();
+            uModelParam->SetAsMat4(glm::value_ptr(modelMat));
+
+            glm::mat3 normMat = glm::mat3(glm::transpose(glm::inverse(modelMat * arcball)));
+            uNormalMatParam->SetAsMat3(glm::value_ptr(normMat));
+
+            aMesh.Draw(*renderDevice);
+        }
 
         platform::PresentPlatformWindow(window);
     }

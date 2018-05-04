@@ -18,6 +18,9 @@ public:
 
 	void LoadProgModel(std::string const & path);
 	void PrintInfo(std::ostream & ostream);
+
+	const std::vector<ProgMesh> & GetMeshes() const { return mMeshes; }
+	std::vector<ProgMesh> & GetMeshes() { return mMeshes; }
 private:
 
 	void ProcessNode(aiNode *node, const aiScene *scene);

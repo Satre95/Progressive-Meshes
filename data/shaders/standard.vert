@@ -15,7 +15,7 @@ out vec4 FragVertColor;
 
 void main()
 {
-    gl_Position = uProjection * uView * uArcball * uModel  * aPos;
+    gl_Position = uProjection * uView  * uModel * uArcball * aPos;
     FragPos = vec3(gl_Position);
     FragNormal = uNormalMatrix * vec3(aNormal);
     FragVertColor = aColor;

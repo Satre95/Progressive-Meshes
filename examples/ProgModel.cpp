@@ -13,7 +13,8 @@ void ProgModel::LoadProgModel(const std::string &path) {
 		aiProcess_Triangulate 
 		| aiProcess_OptimizeMeshes
 		| aiProcess_OptimizeGraph
-		| aiProcess_ImproveCacheLocality);
+		| aiProcess_ImproveCacheLocality
+        | aiProcess_GenNormals);
 
         // check for errors
         if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
@@ -47,19 +48,18 @@ ProgMesh ProgModel::ProcessMesh(aiMesh *mesh, const aiScene *scene) {
 	// data to fill
         std::vector<Vertex> vertices;
         vertices.reserve(mesh->mNumVertices);
-        std::vector<Face> indices;
-        indices.reserve(mesh->mNumFaces);
+        std::vector<uint32_t > indices;
+        indices.reserve(mesh->mNumFaces * 3);
 
         // Walk through each of the mesh's vertices
         for(unsigned int i = 0; i < mesh->mNumVertices; i++) {
-            glm::vec4 pos;
+            glm::vec4 pos(1.f);
             glm::vec4 normal(0.f);
 
             // positions
             pos.x = mesh->mVertices[i].x;
             pos.y = mesh->mVertices[i].y;
             pos.z = mesh->mVertices[i].z;
-            pos.w = 1.f;
 
             // Normals
             if(mesh->HasNormals()) {
@@ -77,7 +77,9 @@ ProgMesh ProgModel::ProcessMesh(aiMesh *mesh, const aiScene *scene) {
         {
             aiFace & face = mesh->mFaces[i];
             // Assume we are loading triangle faces.
-            indices.emplace_back(face.mIndices[0], face.mIndices[1], face.mIndices[2]);
+            indices.push_back(face.mIndices[0]);
+            indices.push_back(face.mIndices[1]);
+            indices.push_back(face.mIndices[2]);
         }
         
         
