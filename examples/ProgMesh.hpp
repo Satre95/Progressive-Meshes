@@ -1,6 +1,8 @@
 #pragma once
 
 #include <glm/matrix.hpp>
+#include <unordered_map>
+#include <functional>
 #include <vector>
 #include "Geometry.hpp"
 #include "RenderDevice.hpp"
@@ -27,6 +29,9 @@ private:
 	/// Stores the faces. Faces are indices into the vertex array.
 	std::vector<Face> mFaces;
 	std::vector<uint32_t> mIndices;
+
+	/// The vertex to face adjacency.
+	std::unordered_multimap<Vertex*, Face*, VertexPtrHash> mVertexFaceAdjacency;
 
 	glm::mat4 mModelMatrix;
 

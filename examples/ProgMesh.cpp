@@ -1,5 +1,8 @@
 #include "ProgMesh.hpp"
 
+size_t Vertex::sCount = 0;
+size_t Face::sCount = 0;
+
 ProgMesh::ProgMesh(std::vector<Vertex> & _verts, std::vector<Face> & _faces):
 mVertices(_verts), mFaces(_faces)
 {
