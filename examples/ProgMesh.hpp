@@ -45,7 +45,7 @@ private:
 
 	/// The GPU buffers are managed by the render device.
 	/// If you want to delete them manually, you must do it through one of the
-	/// associated Delete____Buffer methods.
+	/// associated Destroy____Buffer methods.
 	/// DO NOT call delete buf at any time.
 	starforge::VertexArray * mVAO = nullptr;
 	starforge::VertexBuffer * mVBO = nullptr;
