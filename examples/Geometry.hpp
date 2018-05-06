@@ -26,6 +26,10 @@ struct Vertex {
 
 struct Face
 {
+    Face(): mId(sCount++) {
+        mIndices[0] = mIndices[1] = mIndices[2] = 0;
+    }
+
 	Face(size_t i0, size_t i1, size_t i2): mId(sCount++) {
         mIndices[0] = i0;
         mIndices[1] = i1;
@@ -38,7 +42,7 @@ struct Face
         mIndices[2] = other.mIndices[2];
 	}
 
-	size_t GetIndex(size_t i) { assert(i < 3); return mIndices[i]; }
+	size_t GetIndex(size_t i) const { assert(i < 3); return mIndices[i]; }
 
 	size_t mIndices[3];
     const size_t mId;

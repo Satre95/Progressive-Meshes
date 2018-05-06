@@ -1,4 +1,5 @@
 #include "ProgMesh.hpp"
+#include <utility>
 
 size_t Vertex::sCount = 0;
 size_t Face::sCount = 0;
@@ -44,4 +45,32 @@ void ProgMesh::Draw(starforge::RenderDevice &renderDevice) {
     renderDevice.SetIndexBuffer(mIBO);
 
     renderDevice.DrawTrianglesIndexed32(0, (int)mIndices.size());
+}
+
+void ProgMesh::BuildConnectivity() {
+    // Clear any previous adjacency
+    mVertexFaceAdjacency.clear();
+    mVertexFaceAdjacency = std::unordered_multimap<const Vertex *, const Face *, VertexPtrHash>();
+
+    // Iterate over all faces and add to vertex to Face adjacency list.
+    for(Face & aFace: mFaces) {
+        for (int i = 0; i < 3; ++i) {
+
+            Vertex * aVertex = &(mVertices.at(aFace.GetIndex(i)));
+            mVertexFaceAdjacency.insert(std::make_pair(aVertex, &aFace));
+        }
+    }
+}
+
+void ProgMesh::PrintConnectivity(std::ostream & os) const {
+    for(const Vertex & aVertex: mVertices) {
+        auto range = mVertexFaceAdjacency.equal_range(&aVertex);
+        size_t count = 0;
+        for(auto it = range.first; it != range.second; ++it) {
+            auto vert = it->first;
+            auto face = it->second;
+            count++;
+        }
+        os << "\t\tVertex " << aVertex.mId << " is adjacent to " << count << " faces." << std::endl;
+    }
 }

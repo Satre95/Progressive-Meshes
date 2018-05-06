@@ -10,6 +10,16 @@ set(THREADS_PREFER_PTHREAD ON)
 set(CMAKE_MACOSX_RPATH 1)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+OPTION (ENABLE_OpenMP "Enable OpenMP" ON)
+
+if(ENABLE_OpenMP)
+    find_package(OpenMP)
+    if(OPENMP_FOUND)
+        message("Compiling with OpenMP support")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    endif()
+endif()
+
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 

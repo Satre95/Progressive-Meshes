@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <functional>
 #include <vector>
+#include <iostream>
 #include "Geometry.hpp"
 #include "RenderDevice.hpp"
 
@@ -22,6 +23,8 @@ public:
 
 	void AllocateBuffers(starforge::RenderDevice & renderDevice);
     void Draw(starforge::RenderDevice & renderDevice);
+    void BuildConnectivity();
+    void PrintConnectivity(std::ostream & os) const;
 private:
 	/// The vertices that compose this ProgMesh
 	std::vector<Vertex> mVertices;
@@ -31,7 +34,7 @@ private:
 	std::vector<uint32_t> mIndices;
 
 	/// The vertex to face adjacency.
-	std::unordered_multimap<Vertex*, Face*, VertexPtrHash> mVertexFaceAdjacency;
+	std::unordered_multimap<const Vertex*, const Face*, VertexPtrHash> mVertexFaceAdjacency;
 
 	glm::mat4 mModelMatrix;
 
