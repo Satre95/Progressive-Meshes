@@ -52,9 +52,9 @@ void ProgMesh::Draw(starforge::RenderDevice &renderDevice) {
 void ProgMesh::BuildConnectivity() {
     // Clear any previous adjacency
     mVertexFaceAdjacency.clear();
-    mVertexFaceAdjacency = std::unordered_multimap<const Vertex *, const Face *, VertexPtrHash>();
+    mVertexFaceAdjacency = std::unordered_multimap<Vertex *, Face *, VertexPtrHash>();
     mEdges.clear();
-    mEdges = std::unordered_multimap<const Vertex *, const Vertex *, VertexPtrHash>();
+    mEdges = std::unordered_multimap<Vertex *, Vertex *, VertexPtrHash>();
 
     // Iterate over all faces and add to vertex to Face adjacency list.
     for(Face & aFace: mFaces) {
@@ -97,4 +97,22 @@ void ProgMesh::PrintConnectivity(std::ostream & os) const {
 //    }
 
     os << "\t\tThere are " << mEdges.size() << " edges in this mesh." << std::endl;
+}
+
+std::vector<Vertex *> ProgMesh::GetAdjacentVertices(Vertex * aVertex) const {
+    auto range = mEdges.equal_range(aVertex);
+    std::vector<Vertex *> neighbors;
+    for(auto it = range.first; it != range.second; ++it) {
+        neighbors.push_back(it->second);
+    }
+    return neighbors;
+}
+
+std::vector<Face *> ProgMesh::GetAdjacentFaces(Vertex * aVertex) const {
+    auto range = mVertexFaceAdjacency.equal_range(aVertex);
+    std::vector<Face*> neighbors;
+    for(auto it = range.first; it != range.second; ++it) {
+        neighbors.push_back(it->second);
+    }
+    return neighbors;
 }

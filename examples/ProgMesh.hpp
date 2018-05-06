@@ -25,6 +25,8 @@ public:
     void Draw(starforge::RenderDevice & renderDevice);
     void BuildConnectivity();
     void PrintConnectivity(std::ostream & os) const;
+    std::vector<Vertex *> GetAdjacentVertices(Vertex *) const;
+    std::vector<Face *> GetAdjacentFaces(Vertex *) const;
 private:
 	/// The vertices that compose this ProgMesh
 	std::vector<Vertex> mVertices;
@@ -34,10 +36,10 @@ private:
 	std::vector<uint32_t> mIndices;
 
 	/// The vertex to face adjacency.
-	std::unordered_multimap<const Vertex*, const Face*, VertexPtrHash> mVertexFaceAdjacency;
+	std::unordered_multimap<Vertex*, Face*, VertexPtrHash> mVertexFaceAdjacency;
 
 	/// The vertex adjacency (i.e. edges)
-	std::unordered_multimap<const Vertex *, const Vertex *, VertexPtrHash> mEdges;
+	std::unordered_multimap<Vertex *, Vertex *, VertexPtrHash> mEdges;
 
 	glm::mat4 mModelMatrix;
 
