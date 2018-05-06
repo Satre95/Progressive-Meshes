@@ -51,26 +51,48 @@ void ProgMesh::BuildConnectivity() {
     // Clear any previous adjacency
     mVertexFaceAdjacency.clear();
     mVertexFaceAdjacency = std::unordered_multimap<const Vertex *, const Face *, VertexPtrHash>();
+    mEdges.clear();
+    mEdges = std::unordered_multimap<const Vertex *, const Vertex *, VertexPtrHash>();
 
     // Iterate over all faces and add to vertex to Face adjacency list.
     for(Face & aFace: mFaces) {
         for (int i = 0; i < 3; ++i) {
-
             Vertex * aVertex = &(mVertices.at(aFace.GetIndex(i)));
             mVertexFaceAdjacency.insert(std::make_pair(aVertex, &aFace));
         }
     }
+
+    // Go over each face and add the edges to the vertex to vertex adjacency list.
+    for(Face & aFace: mFaces) {
+        Vertex * v0 = &(mVertices.at(aFace.GetIndex(0)));
+        Vertex * v1 = &(mVertices.at(aFace.GetIndex(1)));
+        Vertex * v2 = &(mVertices.at(aFace.GetIndex(2)));
+
+        // Add v1 and v2 for v0
+        mEdges.insert(std::make_pair(v0, v1));
+        mEdges.insert(std::make_pair(v0, v2));
+
+        // Add v0 and v2 for v1
+        mEdges.insert(std::make_pair(v1, v0));
+        mEdges.insert(std::make_pair(v1, v2));
+
+        // Add v0 and v1 for v2
+        mEdges.insert(std::make_pair(v2, v0));
+        mEdges.insert(std::make_pair(v2, v1));
+    }
 }
 
 void ProgMesh::PrintConnectivity(std::ostream & os) const {
-    for(const Vertex & aVertex: mVertices) {
-        auto range = mVertexFaceAdjacency.equal_range(&aVertex);
-        size_t count = 0;
-        for(auto it = range.first; it != range.second; ++it) {
-            auto vert = it->first;
-            auto face = it->second;
-            count++;
-        }
-        os << "\t\tVertex " << aVertex.mId << " is adjacent to " << count << " faces." << std::endl;
-    }
+//    for(const Vertex & aVertex: mVertices) {
+//        auto range = mVertexFaceAdjacency.equal_range(&aVertex);
+//        size_t count = 0;
+//        for(auto it = range.first; it != range.second; ++it) {
+//            auto vert = it->first;
+//            auto face = it->second;
+//            count++;
+//        }
+//        os << "\t\tVertex " << aVertex.mId << " is adjacent to " << count << " faces." << std::endl;
+//    }
+
+    os << "\t\tThere are " << mEdges.size() << " edges in this mesh." << std::endl;
 }

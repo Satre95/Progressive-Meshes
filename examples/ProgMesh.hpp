@@ -36,6 +36,9 @@ private:
 	/// The vertex to face adjacency.
 	std::unordered_multimap<const Vertex*, const Face*, VertexPtrHash> mVertexFaceAdjacency;
 
+	/// The vertex adjacency (i.e. edges)
+	std::unordered_multimap<const Vertex *, const Vertex *, VertexPtrHash> mEdges;
+
 	glm::mat4 mModelMatrix;
 
 	/// The GPU buffers are managed by the render device.

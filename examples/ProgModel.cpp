@@ -100,5 +100,7 @@ void ProgModel::PrintInfo(std::ostream &ostream) {
         ostream << '\t';
         ostream << "Mesh " << i << " contains " << mMeshes.at(i).mVertices.size()
                 << " vertices and " << mMeshes.at(i).mFaces.size() << " faces." << std::endl;
+        mMeshes.at(i).PrintConnectivity(ostream);
     }
+
 }

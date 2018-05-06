@@ -29,7 +29,6 @@ struct Face
     Face(): mId(sCount++) {
         mIndices[0] = mIndices[1] = mIndices[2] = 0;
     }
-
 	Face(size_t i0, size_t i1, size_t i2): mId(sCount++) {
         mIndices[0] = i0;
         mIndices[1] = i1;
