@@ -99,7 +99,7 @@ void ProgMesh::PrintConnectivity(std::ostream & os) const {
     os << "\t\tThere are " << mEdges.size() << " edges in this mesh." << std::endl;
 }
 
-std::vector<Vertex *> ProgMesh::GetAdjacentVertices(Vertex * aVertex) const {
+std::vector<Vertex *> ProgMesh::GetConnectedVertices(Vertex * aVertex) const {
     auto range = mEdges.equal_range(aVertex);
     std::vector<Vertex *> neighbors;
     for(auto it = range.first; it != range.second; ++it) {

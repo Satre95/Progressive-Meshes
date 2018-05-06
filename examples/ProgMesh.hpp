@@ -25,7 +25,9 @@ public:
     void Draw(starforge::RenderDevice & renderDevice);
     void BuildConnectivity();
     void PrintConnectivity(std::ostream & os) const;
-    std::vector<Vertex *> GetAdjacentVertices(Vertex *) const;
+    /// Returns a list of vertices that are connected vertices, i.e. vertices that have an edge to the given vertex
+    std::vector<Vertex *> GetConnectedVertices(Vertex *) const;
+    /// Returns a list of faces that the given vertex is a part of.
     std::vector<Face *> GetAdjacentFaces(Vertex *) const;
 private:
 	/// The vertices that compose this ProgMesh
