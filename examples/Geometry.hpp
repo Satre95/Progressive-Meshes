@@ -5,6 +5,7 @@
 #include <cassert>
 #include <functional>
 
+
 struct Vertex {
 	Vertex(glm::vec4 _pos = glm::vec4(0, 0, 0, 1.f),
 			 glm::vec4 _norm = glm::vec4(0.f),
@@ -27,23 +28,27 @@ struct Vertex {
 struct Face
 {
     Face(): mId(sCount++) {
-        mIndices[0] = mIndices[1] = mIndices[2] = 0;
+        mIndices[0] = mIndices[1] = mIndices[2] = nullptr;
     }
-	Face(size_t i0, size_t i1, size_t i2): mId(sCount++) {
-        mIndices[0] = i0;
-        mIndices[1] = i1;
-        mIndices[2] = i2;
-	}
 
-	Face(const Face & other) : mId(sCount++) {
+    Face(Vertex & v0, Vertex & v1, Vertex & v2): mId(sCount++) {
+        mIndices[0] = &v0; mIndices[1] = &v1; mIndices[2] = & v2;
+    }
+
+    Face(Vertex * v0, Vertex * v1, Vertex * v2): mId(sCount++) {
+        mIndices[0] = v0; mIndices[1] = v1; mIndices[2] = v2;
+    }
+
+
+    Face(const Face & other) : mId(sCount++) {
 	    mIndices[0] = other.mIndices[0];
         mIndices[1] = other.mIndices[1];
         mIndices[2] = other.mIndices[2];
 	}
 
-	size_t GetIndex(size_t i) const { assert(i < 3); return mIndices[i]; }
+	Vertex * GetVertex(size_t i) const { assert(i < 3); return mIndices[i]; }
 
-	size_t mIndices[3];
+	Vertex* mIndices[3];
     const size_t mId;
     static size_t sCount ;
 };
