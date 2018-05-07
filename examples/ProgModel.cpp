@@ -7,26 +7,31 @@ ProgModel::ProgModel(const std::string & path) {
 }
 
 void ProgModel::LoadProgModel(const std::string &path) {
-	// read file via ASSIMP
-	Assimp::Importer importer;
-	const aiScene* scene = importer.ReadFile(path, 
-		aiProcess_Triangulate 
-		| aiProcess_OptimizeMeshes
-		| aiProcess_OptimizeGraph
-		| aiProcess_ImproveCacheLocality
-        | aiProcess_GenNormals);
+    // read file via ASSIMP
+    Assimp::Importer importer;
+    const aiScene *scene = importer.ReadFile(path,
+                                             aiProcess_Triangulate
+                                             | aiProcess_OptimizeMeshes
+                                             | aiProcess_OptimizeGraph
+                                             | aiProcess_ImproveCacheLocality
+                                             | aiProcess_GenNormals);
 
-        // check for errors
-        if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
-        {
-        	std::cerr << "ERROR::ASSIMP:: " << importer.GetErrorString() << std::endl;
-        	return;
-        }
-        // retrieve the directory path of the filepath
-        mDirectory = path.substr(0, path.find_last_of('/'));
+    // check for errors
+    if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
+        std::cerr << "ERROR::ASSIMP:: " << importer.GetErrorString() << std::endl;
+        return;
+    }
+    // retrieve the directory path of the filepath
+    mDirectory = path.substr(0, path.find_last_of('/'));
 
-        // process ASSIMP's root node recursively
-        ProcessNode(scene->mRootNode, scene);
+    // process ASSIMP's root node recursively
+    ProcessNode(scene->mRootNode, scene);
+
+    // Once all models are loaded, ask them to build their mesh connectivity data structures.
+#pragma omp parallel for
+    for (int i = 0; size_t(i) < mMeshes.size(); ++i) {
+        mMeshes.at(i).BuildConnectivity();
+    }
 }
 
 void ProgModel::ProcessNode(aiNode *node, const aiScene *scene) {
@@ -95,5 +100,7 @@ void ProgModel::PrintInfo(std::ostream &ostream) {
         ostream << '\t';
         ostream << "Mesh " << i << " contains " << mMeshes.at(i).mVertices.size()
                 << " vertices and " << mMeshes.at(i).mFaces.size() << " faces." << std::endl;
+        mMeshes.at(i).PrintConnectivity(ostream);
     }
+
 }

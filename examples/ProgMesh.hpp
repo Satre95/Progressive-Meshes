@@ -1,7 +1,10 @@
 #pragma once
 
 #include <glm/matrix.hpp>
+#include <unordered_map>
+#include <functional>
 #include <vector>
+#include <iostream>
 #include "Geometry.hpp"
 #include "RenderDevice.hpp"
 
@@ -20,6 +23,12 @@ public:
 
 	void AllocateBuffers(starforge::RenderDevice & renderDevice);
     void Draw(starforge::RenderDevice & renderDevice);
+    void BuildConnectivity();
+    void PrintConnectivity(std::ostream & os) const;
+    /// Returns a list of vertices that are connected vertices, i.e. vertices that have an edge to the given vertex
+    std::vector<Vertex *> GetConnectedVertices(Vertex *) const;
+    /// Returns a list of faces that the given vertex is a part of.
+    std::vector<Face *> GetAdjacentFaces(Vertex *) const;
 private:
 	/// The vertices that compose this ProgMesh
 	std::vector<Vertex> mVertices;
@@ -28,11 +37,17 @@ private:
 	std::vector<Face> mFaces;
 	std::vector<uint32_t> mIndices;
 
+	/// The vertex to face adjacency.
+	std::unordered_multimap<Vertex*, Face*, VertexPtrHash> mVertexFaceAdjacency;
+
+	/// The vertex adjacency (i.e. edges)
+	std::unordered_multimap<Vertex *, Vertex *, VertexPtrHash> mEdges;
+
 	glm::mat4 mModelMatrix;
 
 	/// The GPU buffers are managed by the render device.
 	/// If you want to delete them manually, you must do it through one of the
-	/// associated Delete____Buffer methods.
+	/// associated Destroy____Buffer methods.
 	/// DO NOT call delete buf at any time.
 	starforge::VertexArray * mVAO = nullptr;
 	starforge::VertexBuffer * mVBO = nullptr;

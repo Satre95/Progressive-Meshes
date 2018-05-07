@@ -55,11 +55,11 @@ namespace starforge {
                 unsigned int _frontFaceReadMask = 0xFFFFFFFF,
                 unsigned int _frontFaceWriteMask = 0xFFFFFFFF,
 
-                bool _backFaceStencilEnabled = false,
+                bool _backFaceStencilEnabled = true,
                 Compare _backFaceStencilCompare = COMPARE_ALWAYS,
-                StencilAction _backFaceStencilFail = STENCIL_KEEP,
+                StencilAction _backFaceStencilFail = STENCIL_DECR,
                 StencilAction _backFaceStencilPass = STENCIL_KEEP,
-                StencilAction _backFaceDepthFail = STENCIL_KEEP,
+                StencilAction _backFaceDepthFail = STENCIL_DECR,
                 int _backFaceRef = 0,
                 unsigned int _backFaceReadMask = 0xFFFFFFFF,
                 unsigned int _backFaceWriteMask = 0xFFFFFFFF) : id(count++) {

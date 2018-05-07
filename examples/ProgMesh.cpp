@@ -1,13 +1,19 @@
 #include "ProgMesh.hpp"
+#include <utility>
+#include <algorithm>
+
+size_t Vertex::sCount = 0;
+size_t Face::sCount = 0;
 
 ProgMesh::ProgMesh(std::vector<Vertex> & _verts, std::vector<Face> & _faces):
 mVertices(_verts), mFaces(_faces)
 {
     mIndices.reserve(mFaces.size() * 3);
     for(auto & aFace: mFaces) {
-        mIndices.push_back(aFace.GetIndex(0));
-        mIndices.push_back(aFace.GetIndex(1));
-        mIndices.push_back(aFace.GetIndex(2));
+        mIndices.push_back(std::find(mVertices.begin(), mVertices.end(), *aFace.GetVertex(0)) - mVertices.begin());
+        mIndices.push_back(std::find(mVertices.begin(), mVertices.end(), *aFace.GetVertex(1)) - mVertices.begin());
+        mIndices.push_back(std::find(mVertices.begin(), mVertices.end(), *aFace.GetVertex(2)) - mVertices.begin());
+
     }
 }
 
@@ -15,7 +21,7 @@ ProgMesh::ProgMesh(std::vector<Vertex> & _verts, std::vector<uint32_t > & _indic
 mVertices(_verts), mIndices(_indices) {
     mFaces.reserve(_indices.size() / 3);
     for (int i = 0; i < _indices.size(); i+=3)
-        mFaces.emplace_back(_indices.at(i), _indices.at(i+1), _indices.at(i+2));
+        mFaces.emplace_back(mVertices.at(_indices.at(i)), mVertices.at(_indices.at(i+1)), mVertices.at(_indices.at(i+2)));
 }
 
 void ProgMesh::AllocateBuffers(starforge::RenderDevice &renderDevice) {
@@ -41,4 +47,72 @@ void ProgMesh::Draw(starforge::RenderDevice &renderDevice) {
     renderDevice.SetIndexBuffer(mIBO);
 
     renderDevice.DrawTrianglesIndexed32(0, (int)mIndices.size());
+}
+
+void ProgMesh::BuildConnectivity() {
+    // Clear any previous adjacency
+    mVertexFaceAdjacency.clear();
+    mVertexFaceAdjacency = std::unordered_multimap<Vertex *, Face *, VertexPtrHash>();
+    mEdges.clear();
+    mEdges = std::unordered_multimap<Vertex *, Vertex *, VertexPtrHash>();
+
+    // Iterate over all faces and add to vertex to Face adjacency list.
+    for(Face & aFace: mFaces) {
+        for (int i = 0; i < 3; ++i) {
+            Vertex * aVertex = aFace.GetVertex(i);
+            mVertexFaceAdjacency.insert(std::make_pair(aVertex, &aFace));
+        }
+    }
+
+    // Go over each face and add the edges to the vertex to vertex adjacency list.
+    for(Face & aFace: mFaces) {
+        Vertex * v0 = aFace.GetVertex(0);
+        Vertex * v1 = aFace.GetVertex(1);
+        Vertex * v2 = aFace.GetVertex(2);
+
+        // Add v1 and v2 for v0
+        mEdges.insert(std::make_pair(v0, v1));
+        mEdges.insert(std::make_pair(v0, v2));
+
+        // Add v0 and v2 for v1
+        mEdges.insert(std::make_pair(v1, v0));
+        mEdges.insert(std::make_pair(v1, v2));
+
+        // Add v0 and v1 for v2
+        mEdges.insert(std::make_pair(v2, v0));
+        mEdges.insert(std::make_pair(v2, v1));
+    }
+}
+
+void ProgMesh::PrintConnectivity(std::ostream & os) const {
+//    for(const Vertex & aVertex: mVertices) {
+//        auto range = mVertexFaceAdjacency.equal_range(&aVertex);
+//        size_t count = 0;
+//        for(auto it = range.first; it != range.second; ++it) {
+//            auto vert = it->first;
+//            auto face = it->second;
+//            count++;
+//        }
+//        os << "\t\tVertex " << aVertex.mId << " is adjacent to " << count << " faces." << std::endl;
+//    }
+
+    os << "\t\tThere are " << mEdges.size() << " edges in this mesh." << std::endl;
+}
+
+std::vector<Vertex *> ProgMesh::GetConnectedVertices(Vertex * aVertex) const {
+    auto range = mEdges.equal_range(aVertex);
+    std::vector<Vertex *> neighbors;
+    for(auto it = range.first; it != range.second; ++it) {
+        neighbors.push_back(it->second);
+    }
+    return neighbors;
+}
+
+std::vector<Face *> ProgMesh::GetAdjacentFaces(Vertex * aVertex) const {
+    auto range = mVertexFaceAdjacency.equal_range(aVertex);
+    std::vector<Face*> neighbors;
+    for(auto it = range.first; it != range.second; ++it) {
+        neighbors.push_back(it->second);
+    }
+    return neighbors;
 }
