@@ -64,7 +64,7 @@ void ProgMesh::BuildConnectivity() {
         }
     }
 
-    // Go over each face and add the edges to the vertex to vertex adjacency list.
+    // Go over each face and add the edges to the vertex to vertex adjacency list.  TODO: as it is now, each interior pair will be added twice
     for(Face & aFace: mFaces) {
         Vertex * v0 = aFace.GetVertex(0);
         Vertex * v1 = aFace.GetVertex(1);
@@ -115,4 +115,50 @@ std::vector<Face *> ProgMesh::GetAdjacentFaces(Vertex * aVertex) const {
         neighbors.push_back(it->second);
     }
     return neighbors;
+}
+
+glm::mat4 ProgMesh::ComputeQuadric(Vertex * aVertex) const {
+
+	std::vector<Face* > faces = GetAdjacentFaces(aVertex);
+	glm::vec3 v0, v1, v2, n;
+	glm::vec4 q;
+	glm::mat4 Q = glm::mat4(0.0f);
+
+	for (Face* & aFace : faces) {
+		v0 = aFace->GetVertex(0)->mPos;
+		v1 = aFace->GetVertex(1)->mPos;
+		v2 = aFace->GetVertex(2)->mPos;
+
+		n = glm::cross(v1 - v0, v2 - v0);
+		n = n / n.length;
+
+		q = { n.x,n.y,n.z,glm::dot(-n,v0) };
+		Q += q * q;
+	}
+	return Q;
+}
+
+void ProgMesh::PreparePairs() {
+
+	std::vector<Vertex*> neighbors;
+	Pair* newPair;
+	Vertex* vOptimal;
+	float error;
+	
+	for (Vertex & aVertex : mVertices) {
+		// Compute quadric for each vertex
+		mQuadrics.insert(std::make_pair(&aVertex, ComputeQuadric(&aVertex)));
+
+		// Compute error for each pair and order them
+		neighbors = GetConnectedVertices(&aVertex);
+		for (Vertex* & aNeighbor : neighbors) {
+			newPair = new Pair(&aVertex, aNeighbor);
+
+			vOptimal = newPair->CalcOptimal();
+			error = glm::dot(vOptimal->mPos, 
+					(mQuadrics[&aVertex] + mQuadrics[aNeighbor]) * vOptimal->mPos);
+
+			mPairs.insert(std::make_pair(error, newPair));
+		}
+	}
 }

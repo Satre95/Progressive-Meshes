@@ -53,6 +53,34 @@ struct Face
     static size_t sCount ;
 };
 
+struct Pair {
+	
+	Pair(Vertex & vStart, Vertex & vEnd) {
+		v0 = &vStart; v1 = &vEnd;
+	}
+
+	Pair(Vertex * vStart, Vertex * vEnd) {
+		v0 = vStart; v1 = vEnd;
+	}
+
+	Pair(const Pair & other) {
+		v0 = other.v0;
+		v1 = other.v1;
+		vOptimal = other.vOptimal;
+	}
+
+	Vertex * CalcOptimal() { 
+		vOptimal = new Vertex( ((v0->mPos + v1->mPos)/2.0f),
+						((v0->mNormal + v1->mNormal) / 2.0f), 
+						((v0->mColor + v1->mColor) / 2.0f) ); 
+		return vOptimal;
+	}
+
+	Vertex* v0;
+	Vertex* v1;
+	Vertex* vOptimal;
+};
+
 
 /// Inject Vertex & Face hashing functions into std namespace
 namespace std {

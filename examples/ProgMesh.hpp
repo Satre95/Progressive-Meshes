@@ -2,6 +2,7 @@
 
 #include <glm/matrix.hpp>
 #include <unordered_map>
+#include <map>
 #include <functional>
 #include <vector>
 #include <iostream>
@@ -29,6 +30,9 @@ public:
     std::vector<Vertex *> GetConnectedVertices(Vertex *) const;
     /// Returns a list of faces that the given vertex is a part of.
     std::vector<Face *> GetAdjacentFaces(Vertex *) const;
+	glm::mat4 ProgMesh::ComputeQuadric(Vertex * aVertex) const;
+	/// Computes initial quadrics and pairs and sorts the latter by smallest error
+	void ProgMesh::PreparePairs();
 private:
 	/// The vertices that compose this ProgMesh
 	std::vector<Vertex> mVertices;
@@ -42,6 +46,12 @@ private:
 
 	/// The vertex adjacency (i.e. edges)
 	std::unordered_multimap<Vertex *, Vertex *, VertexPtrHash> mEdges;
+
+	/// The vertex quadrics
+	std::unordered_map<Vertex *, glm::mat4, VertexPtrHash> mQuadrics;
+
+	/// The pairs ordered by error
+	std::map<float,Pair *> mPairs;
 
 	glm::mat4 mModelMatrix;
 
