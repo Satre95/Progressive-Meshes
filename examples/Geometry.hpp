@@ -18,6 +18,16 @@ struct Vertex {
     mColor(other.mColor), mId(sCount++)
     {}
 
+
+    Vertex& operator=(const Vertex & other) {
+    	if(mId != other.mId) { //Self assignment check
+	    	mPos = other.mPos;
+	    	mNormal = other.mNormal;
+	    	mColor = other.mColor;
+    	}
+    	return *this;
+    }
+
 	glm::vec4 mPos;
 	glm::vec4 mNormal;
 	glm::vec4 mColor;
@@ -63,20 +73,23 @@ struct Face
     static size_t sCount ;
 };
 
-struct Pair {
+class Pair {
+public:
 	
-	Pair(Vertex & vStart, Vertex & vEnd) {
-		v0 = &vStart; v1 = &vEnd;
-	}
+	Pair(Vertex & vStart, Vertex & vEnd):
+	v0(&vStart), v1(&vEnd)
+	{}
 
-	Pair(Vertex * vStart, Vertex * vEnd) {
-		v0 = vStart; v1 = vEnd;
-	}
+	Pair(Vertex * vStart, Vertex * vEnd):
+	v0(vStart), v1(vEnd)
+	{}
 
-	Pair(const Pair & other) {
-		v0 = other.v0;
-		v1 = other.v1;
-		vOptimal = other.vOptimal;
+	Pair(const Pair & other):
+	v0(other.v0), v1(other.v1), vOptimal(new Vertex(*other.vOptimal))
+	{}
+
+	~Pair() {
+		delete vOptimal;
 	}
 
 	Vertex * CalcOptimal() { 
@@ -86,9 +99,9 @@ struct Pair {
 		return vOptimal;
 	}
 
-	Vertex* v0;
-	Vertex* v1;
-	Vertex* vOptimal;
+	Vertex* v0 = nullptr;
+	Vertex* v1 = nullptr;
+	Vertex* vOptimal = nullptr;
 };
 
 
