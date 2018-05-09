@@ -164,12 +164,13 @@ void ProgMesh::PreparePairs() {
 	}
 }
 
-// need to update mVector, mFaces, mVertexFaceAdjacency, mEdges, mQuadrics, mPairs
+// need to update mVector, mFaces, mVertexFaceAdjacency, mEdges, mQuadrics
 void ProgMesh::EdgeCollapse(Pair* collapsePair) {
 
 	Vertex* vNew = collapsePair->vOptimal;
 	Vertex* v0 = collapsePair->v0;
 	Vertex* v1 = collapsePair->v1;
+	Vertex* vNeighbor;
 	bool sharedFace;
 
 	// make adjacency of newV the union of v0 and v1 adjacency lists (w/o duplicates)
@@ -185,7 +186,22 @@ void ProgMesh::EdgeCollapse(Pair* collapsePair) {
 	for (Face* & aFace : v1Faces) {
 		sharedFace = false;
 		for (Face* & insertedFace : alreadyInserted) {
-			if (insertedFace == aFace) sharedFace = true;
+			if (insertedFace == aFace) {					//found a degenerate face
+
+				// remove this face from vertex to face adjacency
+				for (unsigned int i = 0; i < 3; i++) {
+					if (aFace->GetVertex(i) != v0 && aFace->GetVertex(i) != v1) vNeighbor = aFace->GetVertex(i);
+				}
+				auto range = mVertexFaceAdjacency.equal_range(vNeighbor);
+				for (auto it = range.first; it != range.second; ++it) {
+					if (it->second == insertedFace) {
+						mVertexFaceAdjacency.erase(it);
+					}
+				}
+				sharedFace = true;
+
+				// TODO handle deleting the face here (actually update mFaces)
+			}
 		}
 		if (!sharedFace) {
 			mVertexFaceAdjacency.insert(std::make_pair(vNew, aFace));
@@ -193,15 +209,11 @@ void ProgMesh::EdgeCollapse(Pair* collapsePair) {
 		}
 	}
 
-	// for every face that newV now has, put it in the spot v0 or v1
-	std::vector<Face*> vNewFaces = GetAdjacentFaces(vNew);
+	//update mEdges
 
-	for (Face* & aFace : vNewFaces) {
-		aFace->ReplaceVertex();
-	}
+	//update mQuadrics
 
-	//remove degenerate here
-
+	//remove v0 and v1 and update mVector
 
 }
 
