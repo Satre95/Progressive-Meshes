@@ -30,9 +30,11 @@ public:
     std::vector<Vertex *> GetConnectedVertices(Vertex *) const;
     /// Returns a list of faces that the given vertex is a part of.
     std::vector<Face *> GetAdjacentFaces(Vertex *) const;
-	glm::mat4 ProgMesh::ComputeQuadric(Vertex * aVertex) const;
+	glm::mat4 ComputeQuadric(Vertex * aVertex) const;
 	/// Computes initial quadrics and pairs and sorts the latter by smallest error
-	void ProgMesh::PreparePairs();
+	void PreparePairs();
+	void EdgeCollapse(Pair* collapsePair);
+	void TestEdgeCollapse(unsigned int v0, unsigned int v1);
 private:
 	/// The vertices that compose this ProgMesh
 	std::vector<Vertex> mVertices;

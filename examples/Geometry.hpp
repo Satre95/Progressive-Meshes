@@ -48,6 +48,16 @@ struct Face
 
 	Vertex * GetVertex(size_t i) const { assert(i < 3); return mIndices[i]; }
 
+	bool ReplaceVertex(Vertex* oldV, Vertex* newV) {
+		for (Vertex* & aVertex : mIndices) {
+			if (aVertex == oldV) {
+				aVertex = newV;
+				return true;
+			}
+		}
+		return false;
+	}
+
 	Vertex* mIndices[3];
     const size_t mId;
     static size_t sCount ;

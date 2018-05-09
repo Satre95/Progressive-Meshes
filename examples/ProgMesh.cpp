@@ -148,7 +148,7 @@ void ProgMesh::PreparePairs() {
 	for (Vertex & aVertex : mVertices) {
 		// Compute quadric for each vertex
 		mQuadrics.insert(std::make_pair(&aVertex, ComputeQuadric(&aVertex)));
-
+		
 		// Compute error for each pair and order them
 		neighbors = GetConnectedVertices(&aVertex);
 		for (Vertex* & aNeighbor : neighbors) {
@@ -162,4 +162,63 @@ void ProgMesh::PreparePairs() {
 			mPairs.insert(std::make_pair(error, newPair));
 		}
 	}
+}
+
+// need to update mVector, mFaces, mVertexFaceAdjacency, mEdges, mQuadrics, mPairs
+void ProgMesh::EdgeCollapse(Pair* collapsePair) {
+
+	Vertex* vNew = collapsePair->vOptimal;
+	Vertex* v0 = collapsePair->v0;
+	Vertex* v1 = collapsePair->v1;
+	bool sharedFace;
+
+	// make adjacency of newV the union of v0 and v1 adjacency lists (w/o duplicates)
+	std::vector<Face*> v0Faces = GetAdjacentFaces(v0);
+	std::vector<Face*> v1Faces = GetAdjacentFaces(v1);
+	std::vector<Face*> alreadyInserted;
+
+	for (Face* & aFace : v0Faces) {
+		mVertexFaceAdjacency.insert(std::make_pair(vNew, aFace));
+		alreadyInserted.push_back(aFace);
+		aFace->ReplaceVertex(v0, vNew);
+	}
+	for (Face* & aFace : v1Faces) {
+		sharedFace = false;
+		for (Face* & insertedFace : alreadyInserted) {
+			if (insertedFace == aFace) sharedFace = true;
+		}
+		if (!sharedFace) {
+			mVertexFaceAdjacency.insert(std::make_pair(vNew, aFace));
+			aFace->ReplaceVertex(v1, vNew);
+		}
+	}
+
+	// for every face that newV now has, put it in the spot v0 or v1
+	std::vector<Face*> vNewFaces = GetAdjacentFaces(vNew);
+
+	for (Face* & aFace : vNewFaces) {
+		aFace->ReplaceVertex();
+	}
+
+	//remove degenerate here
+
+
+}
+
+// just used for testing specific collapses
+// in practice will only use min error pair, never have to search for pair given v0 v1 except here
+void ProgMesh::TestEdgeCollapse(unsigned int v0, unsigned int v1) {
+	Vertex* vStart = &mVertices[v0];
+	Vertex* vEnd = &mVertices[v1];
+	glm::vec4 vOptimal = (vStart->mPos + vEnd->mPos / 2.0f);
+
+	float error = glm::dot(vOptimal,(mQuadrics[vStart] + mQuadrics[vEnd]) * vOptimal);
+	auto itr = mPairs.find(error);
+
+	if (itr == mPairs.end()) {
+		std::cerr << "Pair not found!" << std::endl;
+		return;
+	}
+
+	EdgeCollapse(itr->second);
 }
