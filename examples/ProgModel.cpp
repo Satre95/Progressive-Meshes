@@ -31,6 +31,7 @@ void ProgModel::LoadProgModel(const std::string &path) {
 #pragma omp parallel for
     for (int i = 0; size_t(i) < mMeshes.size(); ++i) {
         mMeshes.at(i).BuildConnectivity();
+		mMeshes.at(i).PreparePairs();
     }
 }
 

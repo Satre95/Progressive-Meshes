@@ -130,7 +130,7 @@ glm::mat4 ProgMesh::ComputeQuadric(Vertex * aVertex) const {
 		v2 = aFace->GetVertex(2)->mPos;
 
 		n = glm::cross(v1 - v0, v2 - v0);
-		n = n / n.length;
+		n = n * (1 / glm::length(n));
 
 		q = { n.x,n.y,n.z,glm::dot(-n,v0) };
 		Q += q * q;
@@ -154,6 +154,7 @@ void ProgMesh::PreparePairs() {
 		for (Vertex* & aNeighbor : neighbors) {
 			newPair = new Pair(&aVertex, aNeighbor);
 
+			// only midpoint TODO - can definetly make this the legit optimal w/o too much trouble
 			vOptimal = newPair->CalcOptimal();
 			error = glm::dot(vOptimal->mPos, 
 					(mQuadrics[&aVertex] + mQuadrics[aNeighbor]) * vOptimal->mPos);
