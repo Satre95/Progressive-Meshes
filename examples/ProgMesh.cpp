@@ -164,6 +164,15 @@ void ProgMesh::PreparePairs() {
 	}
 }
 
+void ProgMesh::ConnectedVerticesUpdate(Vertex* updateV, Vertex* vOld, Vertex* vNew) {
+
+	std::vector<Vertex* > neighbors = GetConnectedVertices(updateV);
+
+	for (Vertex* & aVertex : neighbors) {
+		if (aVertex == vOld) aVertex = vNew;
+	}
+}
+
 // need to update mVector, mFaces, mVertexFaceAdjacency, mEdges, mQuadrics
 void ProgMesh::EdgeCollapse(Pair* collapsePair) {
 
@@ -176,16 +185,16 @@ void ProgMesh::EdgeCollapse(Pair* collapsePair) {
 	// make adjacency of newV the union of v0 and v1 adjacency lists (w/o duplicates)
 	std::vector<Face*> v0Faces = GetAdjacentFaces(v0);
 	std::vector<Face*> v1Faces = GetAdjacentFaces(v1);
-	std::vector<Face*> alreadyInserted;
+	std::vector<Face*> alreadyInsertedF;
 
 	for (Face* & aFace : v0Faces) {
 		mVertexFaceAdjacency.insert(std::make_pair(vNew, aFace));
-		alreadyInserted.push_back(aFace);
+		alreadyInsertedF.push_back(aFace);
 		aFace->ReplaceVertex(v0, vNew);
 	}
 	for (Face* & aFace : v1Faces) {
 		sharedFace = false;
-		for (Face* & insertedFace : alreadyInserted) {
+		for (Face* & insertedFace : alreadyInsertedF) {
 			if (insertedFace == aFace) {					//found a degenerate face
 
 				// remove this face from vertex to face adjacency
@@ -200,7 +209,7 @@ void ProgMesh::EdgeCollapse(Pair* collapsePair) {
 				}
 				sharedFace = true;
 
-				// TODO handle deleting the face here (actually update mFaces)
+				// TODO handle deleting the degenerate face here (actually update mFaces)
 			}
 		}
 		if (!sharedFace) {
@@ -209,11 +218,50 @@ void ProgMesh::EdgeCollapse(Pair* collapsePair) {
 		}
 	}
 
-	//update mEdges
+	// update mEdges
+	std::vector<Vertex*> v0Vertex = GetConnectedVertices(v0);
+	std::vector<Vertex*> v1Vertex = GetConnectedVertices(v1);
+	std::vector<Vertex*> alreadyInsertedV;
+	bool sharedVertex;
 
-	//update mQuadrics
+	for (Vertex* & aVertex : v0Vertex) {
+		if (aVertex == v1) continue;
+		mEdges.insert(std::make_pair(vNew, aVertex));
+		alreadyInsertedV.push_back(aVertex);
+		ConnectedVerticesUpdate(aVertex, v0, vNew);
+	}
+	for (Vertex* & aVertex : v1Vertex) {
+		if (aVertex == v0) continue;
+		sharedVertex = false;
+		for (Vertex* & insertedVertex : alreadyInsertedV) {
+			if (insertedVertex == aVertex) {					//found a degenerate edge
+				// remove degenerate edge
+				auto range = mEdges.equal_range(insertedVertex);
+				for (auto it = range.first; it != range.second; ++it) {
+					if (it->second == v1) {
+						mEdges.erase(it);
+					}
+				}
+				sharedVertex = true;
+			}
+		}
+		if (!sharedVertex) {
+			mEdges.insert(std::make_pair(vNew, aVertex));
+			ConnectedVerticesUpdate(aVertex, v1, vNew);
+		}
+	}
 
-	//remove v0 and v1 and update mVector
+	// update mQuadrics
+	std::vector<Vertex* > surroundingVertices = GetConnectedVertices(vNew);
+	for (Vertex* & aVertex : surroundingVertices) {
+		auto itr = mQuadrics.find(aVertex);
+		itr->second = ComputeQuadric(aVertex);
+	}
+	mQuadrics.insert(std::make_pair(vNew, ComputeQuadric(vNew)));
+
+	// Update pairs (now that quadrics are updated need to reorder tree for new errors)
+
+	// TODO: delete v0 and v1 and update mVector
 
 }
 

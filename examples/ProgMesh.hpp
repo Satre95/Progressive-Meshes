@@ -33,6 +33,7 @@ public:
 	glm::mat4 ComputeQuadric(Vertex * aVertex) const;
 	/// Computes initial quadrics and pairs and sorts the latter by smallest error
 	void PreparePairs();
+	void ConnectedVerticesUpdate(Vertex* updateV, Vertex* vOld, Vertex* vNew);
 	void EdgeCollapse(Pair* collapsePair);
 	void TestEdgeCollapse(unsigned int v0, unsigned int v1);
 private:
