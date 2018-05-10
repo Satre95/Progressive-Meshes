@@ -68,3 +68,5 @@ private:
     starforge::VertexDescription * mVertexDescription = nullptr;
 	friend class ProgModel;
 };
+
+typedef std::shared_ptr<ProgMesh> ProgMeshRef;

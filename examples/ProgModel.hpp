@@ -3,6 +3,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <memory>
 
 #include "ProgMesh.hpp"
 #include <iostream>
@@ -30,3 +31,4 @@ private:
 
 	std::string mDirectory;	
 };
+typedef std::shared_ptr<ProgModel> ProgModelRef;

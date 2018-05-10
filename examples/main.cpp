@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+
 #include <glm/gtc/type_ptr.hpp>
 #include "ProgMesh.hpp"
 #include "ProgModel.hpp"
@@ -56,7 +57,7 @@ int main(int argc, char *argv[]) {
     starforge::PipelineParam * uArcballParam = pipeline->GetParam("uArcball");
     starforge::PipelineParam * uNormalMatParam = pipeline->GetParam("uNormalMatrix");
 
-    ProgModel * aModel = new ProgModel(std::string(argv[1]));
+    ProgModelRef aModel = std::make_shared<ProgModel>(std::string(argv[1]));
     aModel->PrintInfo(std::cout);
     for(auto & aMesh: aModel->GetMeshes()) {
         aMesh.AllocateBuffers(*renderDevice);
@@ -87,8 +88,6 @@ int main(int argc, char *argv[]) {
 
         platform::PresentPlatformWindow(window);
     }
-
-    delete aModel;
 
     renderDevice->DestroyPipeline(pipeline);
 
