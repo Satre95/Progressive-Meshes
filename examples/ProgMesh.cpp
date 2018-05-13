@@ -64,23 +64,29 @@ void ProgMesh::BuildConnectivity() {
         }
     }
 
-    // Go over each face and add the edges to the vertex to vertex adjacency list.  TODO: as it is now, each interior pair will be added twice
+    // Go over each face and add the edges to the vertex to vertex adjacency list.
     for(Face & aFace: mFaces) {
         Vertex * v0 = aFace.GetVertex(0);
         Vertex * v1 = aFace.GetVertex(1);
         Vertex * v2 = aFace.GetVertex(2);
 
-        // Add v1 and v2 for v0
-        mEdges.insert(std::make_pair(v0, v1));
-        mEdges.insert(std::make_pair(v0, v2));
+		std::vector<Vertex* > neighbors = GetConnectedVertices(v0);
+		if (std::find(neighbors.begin(), neighbors.end(), v1) == neighbors.end()) {
+			mEdges.insert(std::make_pair(v0, v1));
+			mEdges.insert(std::make_pair(v1, v0));
+		}
 
-        // Add v0 and v2 for v1
-        mEdges.insert(std::make_pair(v1, v0));
-        mEdges.insert(std::make_pair(v1, v2));
+		neighbors = GetConnectedVertices(v1);
+		if (std::find(neighbors.begin(), neighbors.end(), v2) == neighbors.end()) {
+			mEdges.insert(std::make_pair(v1, v2));
+			mEdges.insert(std::make_pair(v2, v1));
+		}
 
-        // Add v0 and v1 for v2
-        mEdges.insert(std::make_pair(v2, v0));
-        mEdges.insert(std::make_pair(v2, v1));
+		neighbors = GetConnectedVertices(v2);
+		if (std::find(neighbors.begin(), neighbors.end(), v0) == neighbors.end()) {
+			mEdges.insert(std::make_pair(v2, v0));
+			mEdges.insert(std::make_pair(v0, v2));
+		}
     }
 }
 
@@ -130,10 +136,10 @@ glm::mat4 ProgMesh::ComputeQuadric(Vertex * aVertex) const {
 		v2 = aFace->GetVertex(2)->mPos;
 
 		n = glm::cross(v1 - v0, v2 - v0);
-		n = n * (1 / glm::length(n));
+		n = glm::normalize(n);
 
 		q = { n.x,n.y,n.z,glm::dot(-n,v0) };
-		Q += q * q;
+		Q += glm::outerProduct(q, q);
 	}
 	return Q;
 }
@@ -195,7 +201,7 @@ void ProgMesh::EdgeCollapse(Pair* collapsePair) {
 	for (Face* & aFace : v1Faces) {
 		sharedFace = false;
 		for (Face* & insertedFace : alreadyInsertedF) {
-			if (insertedFace == aFace) {					//found a degenerate face
+			if (insertedFace == aFace) {					// found a degenerate face
 
 				// remove this face from vertex to face adjacency
 				for (unsigned int i = 0; i < 3; i++) {
@@ -209,7 +215,7 @@ void ProgMesh::EdgeCollapse(Pair* collapsePair) {
 				}
 				sharedFace = true;
 
-				// TODO handle deleting the degenerate face here (actually update mFaces)
+				// TODO handle deleting the degenerate face here (actually update mFaces) - update the Faces set
 			}
 		}
 		if (!sharedFace) {
@@ -261,7 +267,7 @@ void ProgMesh::EdgeCollapse(Pair* collapsePair) {
 
 	// Update pairs (now that quadrics are updated need to reorder tree for new errors)
 
-	// TODO: delete v0 and v1 and update mVector
+	// TODO: delete v0 and v1 and update mVertices
 
 }
 

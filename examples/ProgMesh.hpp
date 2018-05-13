@@ -41,7 +41,7 @@ private:
 	std::vector<Vertex> mVertices;
 
 	/// Stores the faces. Faces are indices into the vertex array.
-	std::vector<Face> mFaces;
+	std::vector<Face> mFaces;										// TODO: make unorderedSet
 	std::vector<uint32_t> mIndices;
 
 	/// The vertex to face adjacency.
