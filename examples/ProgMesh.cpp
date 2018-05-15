@@ -23,6 +23,12 @@ mVertices(_verts), mIndices(_indices) {
         mFaces.emplace(new Face(mVertices.at(_indices.at(i)), mVertices.at(_indices.at(i+1)), mVertices.at(_indices.at(i+2))));
 }
 
+ProgMesh::~ProgMesh() {
+	for(auto & facePtr: mFaces) {
+		delete facePtr;
+	}
+}
+
 void ProgMesh::AllocateBuffers(starforge::RenderDevice &renderDevice) {
     if(mVAO) renderDevice.DestroyVertexArray(mVAO);
     if(mVBO) renderDevice.DestroyVertexBuffer(mVBO);
