@@ -2,10 +2,12 @@
 
 #include <glm/matrix.hpp>
 #include <unordered_map>
+#include <unordered_set>
 #include <map>
 #include <functional>
 #include <vector>
 #include <iostream>
+#include <memory>
 #include "Geometry.hpp"
 #include "RenderDevice.hpp"
 
@@ -16,7 +18,7 @@ class ProgMesh
 {
 public:
 	ProgMesh() = default;
-	ProgMesh(std::vector<Vertex> & _verts, std::vector<Face> & _faces);
+	ProgMesh(std::vector<Vertex> & _verts, std::unordered_set<Face> & _faces);
     ProgMesh(std::vector<Vertex> & _verts, std::vector<uint32_t > & _indices);
 
 	const glm::mat4 & GetModelMatrix() const { return  mModelMatrix; }
@@ -29,7 +31,7 @@ public:
     /// Returns a list of vertices that are connected vertices, i.e. vertices that have an edge to the given vertex
     std::vector<Vertex *> GetConnectedVertices(Vertex *) const;
     /// Returns a list of faces that the given vertex is a part of.
-    std::vector<Face *> GetAdjacentFaces(Vertex *) const;
+    std::vector<const Face *> GetAdjacentFaces(Vertex *) const;
 	glm::mat4 ComputeQuadric(Vertex * aVertex) const;
 	/// Computes initial quadrics and pairs and sorts the latter by smallest error
 	void PreparePairs();
@@ -37,15 +39,19 @@ public:
 	void EdgeCollapse(Pair* collapsePair);
 	void TestEdgeCollapse(unsigned int v0, unsigned int v1);
 private:
+
+
+	void GenerateIndicesFromFaces();
 	/// The vertices that compose this ProgMesh
 	std::vector<Vertex> mVertices;
 
 	/// Stores the faces. Faces are indices into the vertex array.
-	std::vector<Face> mFaces;										// TODO: make unorderedSet
+	//std::vector<Face> mFaces;										// TODO: make unorderedSet
+    std::unordered_set<Face> mFaces;
 	std::vector<uint32_t> mIndices;
 
 	/// The vertex to face adjacency.
-	std::unordered_multimap<Vertex*, Face*, VertexPtrHash> mVertexFaceAdjacency;
+	std::unordered_multimap<Vertex*, const Face*, VertexPtrHash> mVertexFaceAdjacency;
 
 	/// The vertex adjacency (i.e. edges)
 	std::unordered_multimap<Vertex *, Vertex *, VertexPtrHash> mEdges;

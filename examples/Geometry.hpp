@@ -15,7 +15,7 @@ struct Vertex {
 			{}
     Vertex(const Vertex & other) :
     mPos(other.mPos), mNormal(other.mNormal),
-    mColor(other.mColor), mId(sCount++)
+    mColor(other.mColor), mId(other.mId)
     {}
 
 
@@ -50,7 +50,7 @@ struct Face
     }
 
 
-    Face(const Face & other) : mId(sCount++) {
+    Face(const Face & other) : mId(other.mId) {
 	    mIndices[0] = other.mIndices[0];
         mIndices[1] = other.mIndices[1];
         mIndices[2] = other.mIndices[2];
