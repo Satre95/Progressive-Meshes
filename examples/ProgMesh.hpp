@@ -34,6 +34,7 @@ public:
 	/// Computes initial quadrics and pairs and sorts the latter by smallest error
 	void PreparePairs();
 	void ConnectedVerticesUpdate(Vertex* updateV, Vertex* vOld, Vertex* vNew);
+	void DeletePairsWithNeighbor(Vertex* v);
 	void EdgeCollapse(Pair* collapsePair);
 	void TestEdgeCollapse(unsigned int v0, unsigned int v1);
 private:
@@ -54,7 +55,11 @@ private:
 	std::unordered_map<Vertex *, glm::mat4, VertexPtrHash> mQuadrics;
 
 	/// The pairs ordered by error
-	std::map<float,Pair *> mPairs;
+	std::multimap<float,Pair *> mPairs;
+
+	// map from two vertices to iterator that points into mPairs
+	// this allows access and updating of mPairs, given the two verticies that make up the pair
+	std::unordered_map<std::pair<Vertex*, Vertex*>, std::multimap<float, Pair *>::iterator> mEdgeToPair;
 
 	glm::mat4 mModelMatrix;
 

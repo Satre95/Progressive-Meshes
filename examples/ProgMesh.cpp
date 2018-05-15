@@ -165,7 +165,8 @@ void ProgMesh::PreparePairs() {
 			error = glm::dot(vOptimal->mPos, 
 					(mQuadrics[&aVertex] + mQuadrics[aNeighbor]) * vOptimal->mPos);
 
-			mPairs.insert(std::make_pair(error, newPair));
+			std::multimap<float, Pair *>::iterator itr = mPairs.insert(std::make_pair(error, newPair));
+			mEdgeToPair.insert(std::make_pair(std::make_pair(&aVertex, aNeighbor), itr));
 		}
 	}
 }
@@ -176,6 +177,24 @@ void ProgMesh::ConnectedVerticesUpdate(Vertex* updateV, Vertex* vOld, Vertex* vN
 
 	for (Vertex* & aVertex : neighbors) {
 		if (aVertex == vOld) aVertex = vNew;
+	}
+}
+
+void ProgMesh::DeletePairsWithNeighbor(Vertex* v) {
+
+	std::vector<Vertex* > neighbors = GetConnectedVertices(v);
+
+	for (Vertex* & aNeighbor : neighbors) {
+		auto itr = mEdgeToPair.find(std::make_pair(v, aNeighbor));
+		if (&itr) {
+			mPairs.erase(itr->second);
+			mEdgeToPair.erase(itr);
+		}
+		itr = mEdgeToPair.find(std::make_pair(aNeighbor, v));
+		if (&itr) {
+			mPairs.erase(itr->second);
+			mEdgeToPair.erase(itr);
+		}
 	}
 }
 
@@ -227,6 +246,15 @@ void ProgMesh::EdgeCollapse(Pair* collapsePair) {
 	// update mEdges
 	std::vector<Vertex*> v0Vertex = GetConnectedVertices(v0);
 	std::vector<Vertex*> v1Vertex = GetConnectedVertices(v1);
+
+	// remove pairs with soon to be outdated errors
+	for (Vertex* & aVertex : v0Vertex) {
+		DeletePairsWithNeighbor(aVertex);
+	}
+	for (Vertex* & aVertex : v1Vertex) {
+		DeletePairsWithNeighbor(aVertex);
+	}
+
 	std::vector<Vertex*> alreadyInsertedV;
 	bool sharedVertex;
 
@@ -265,7 +293,25 @@ void ProgMesh::EdgeCollapse(Pair* collapsePair) {
 	}
 	mQuadrics.insert(std::make_pair(vNew, ComputeQuadric(vNew)));
 
-	// Update pairs (now that quadrics are updated need to reorder tree for new errors)
+	// add pairs (now that quadrics are updated need to reorder tree for new errors)
+	std::vector<Vertex*> neighbors;
+	Pair* newPair;
+	Vertex* vOptimal;
+	float error;
+
+	for (Vertex* & aVertex : surroundingVertices) {
+		neighbors = GetConnectedVertices(aVertex);
+		for (Vertex* & aNeighbor : neighbors) {
+			newPair = new Pair(aVertex, aNeighbor);
+
+			vOptimal = newPair->CalcOptimal();
+			error = glm::dot(vOptimal->mPos,
+				(mQuadrics[aVertex] + mQuadrics[aNeighbor]) * vOptimal->mPos);
+
+			std::multimap<float, Pair *>::iterator itr = mPairs.insert(std::make_pair(error, newPair));
+			mEdgeToPair.insert(std::make_pair(std::make_pair(aVertex, aNeighbor), itr));
+		}
+	}
 
 	// TODO: delete v0 and v1 and update mVertices
 
