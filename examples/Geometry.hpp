@@ -4,6 +4,7 @@
 #include <vector>
 #include <cassert>
 #include <functional>
+#include "Utilities.hpp"
 
 
 struct Vertex {
@@ -121,6 +122,16 @@ namespace std {
         result_type operator()(argument_type const& f) const  {
             return std::hash<size_t>{}(f.mId);
         }
+    };
+
+    template <> struct hash<std::pair<Vertex*, Vertex*>> {
+    	typedef std::pair<Vertex*, Vertex*> argument_type;
+    	std::size_t operator() (argument_type const & f) const {
+    		std::size_t seed = 0;
+    		Utilities::hash_combine(seed, f.first);
+    		Utilities::hash_combine(seed, f.second);
+    		return seed;
+    	}
     };
 }
 

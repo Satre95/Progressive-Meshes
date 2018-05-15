@@ -1,4 +1,5 @@
 #include "ProgMesh.hpp"
+#include "Utilities.hpp"
 #include <utility>
 #include <algorithm>
 
@@ -6,21 +7,20 @@ size_t Vertex::sCount = 0;
 size_t Face::sCount = 0;
 
 ProgMesh::ProgMesh(std::vector<Vertex> & _verts, std::unordered_set<Face> & _faces):
-mVertices(_verts), mFaces(_faces)
+mVertices(_verts)
 {
-    mIndices.reserve(mFaces.size() * 3);
-    for(auto faceItr = mFaces.begin(); faceItr != mFaces.end(); faceItr++) {
-        mIndices.push_back(std::find(mVertices.begin(), mVertices.end(), *(faceItr->GetVertex(0))) - mVertices.begin());
-        mIndices.push_back(std::find(mVertices.begin(), mVertices.end(), *(faceItr->GetVertex(1))) - mVertices.begin());
-        mIndices.push_back(std::find(mVertices.begin(), mVertices.end(), *(faceItr->GetVertex(2))) - mVertices.begin());
-
+    mFaces.reserve(_faces.size());
+    for (auto faceItr = _faces.begin(); faceItr != _faces.begin(); faceItr++) {
+        mFaces.insert(new Face(*faceItr));
     }
+    
+    GenerateIndicesFromFaces();
 }
 
 ProgMesh::ProgMesh(std::vector<Vertex> & _verts, std::vector<uint32_t > & _indices) :
 mVertices(_verts), mIndices(_indices) {
     for (int i = 0; i < _indices.size(); i+=3)
-        mFaces.emplace(mVertices.at(_indices.at(i)), mVertices.at(_indices.at(i+1)), mVertices.at(_indices.at(i+2)));
+        mFaces.emplace(new Face(mVertices.at(_indices.at(i)), mVertices.at(_indices.at(i+1)), mVertices.at(_indices.at(i+2))));
 }
 
 void ProgMesh::AllocateBuffers(starforge::RenderDevice &renderDevice) {
@@ -51,23 +51,23 @@ void ProgMesh::Draw(starforge::RenderDevice &renderDevice) {
 void ProgMesh::BuildConnectivity() {
     // Clear any previous adjacency
     mVertexFaceAdjacency.clear();
-    mVertexFaceAdjacency = std::unordered_multimap<Vertex *, const Face *, VertexPtrHash>();
+    mVertexFaceAdjacency = std::unordered_multimap<Vertex *, Face *, VertexPtrHash>();
     mEdges.clear();
     mEdges = std::unordered_multimap<Vertex *, Vertex *, VertexPtrHash>();
 
     // Iterate over all faces and add to vertex to Face adjacency list.
-    for(const Face & aFace: mFaces) {
+    for(auto & aFace: mFaces) {
         for (int i = 0; i < 3; ++i) {
-            Vertex * aVertex = aFace.GetVertex(i);
-            mVertexFaceAdjacency.insert(std::make_pair(aVertex, &aFace));
+            Vertex * aVertex = aFace->GetVertex(i);
+            mVertexFaceAdjacency.insert(std::make_pair(aVertex, aFace));
         }
     }
 
     // Go over each face and add the edges to the vertex to vertex adjacency list.
-    for(const Face & aFace: mFaces) {
-        Vertex * v0 = aFace.GetVertex(0);
-        Vertex * v1 = aFace.GetVertex(1);
-        Vertex * v2 = aFace.GetVertex(2);
+    for(auto & aFace: mFaces) {
+        Vertex * v0 = aFace->GetVertex(0);
+        Vertex * v1 = aFace->GetVertex(1);
+        Vertex * v2 = aFace->GetVertex(2);
 
 		std::vector<Vertex* > neighbors = GetConnectedVertices(v0);
 		if (std::find(neighbors.begin(), neighbors.end(), v1) == neighbors.end()) {
@@ -113,9 +113,9 @@ std::vector<Vertex *> ProgMesh::GetConnectedVertices(Vertex * aVertex) const {
     return neighbors;
 }
 
-std::vector<const Face *> ProgMesh::GetAdjacentFaces(Vertex * aVertex) const {
+std::vector<Face *> ProgMesh::GetAdjacentFaces(Vertex * aVertex) const {
     auto range = mVertexFaceAdjacency.equal_range(aVertex);
-    std::vector<const Face*> neighbors;
+    std::vector<Face*> neighbors;
     for(auto it = range.first; it != range.second; ++it) {
         neighbors.push_back(it->second);
     }
@@ -124,12 +124,12 @@ std::vector<const Face *> ProgMesh::GetAdjacentFaces(Vertex * aVertex) const {
 
 glm::mat4 ProgMesh::ComputeQuadric(Vertex * aVertex) const {
 
-	std::vector<const Face* > faces = GetAdjacentFaces(aVertex);
+	std::vector<Face* > faces = GetAdjacentFaces(aVertex);
 	glm::vec3 v0, v1, v2, n;
 	glm::vec4 q;
 	glm::mat4 Q = glm::mat4(0.0f);
 
-	for (const Face* & aFace : faces) {
+	for (Face* & aFace : faces) {
 		v0 = aFace->GetVertex(0)->mPos;
 		v1 = aFace->GetVertex(1)->mPos;
 		v2 = aFace->GetVertex(2)->mPos;
@@ -185,12 +185,12 @@ void ProgMesh::DeletePairsWithNeighbor(Vertex* v) {
 
 	for (Vertex* & aNeighbor : neighbors) {
 		auto itr = mEdgeToPair.find(std::make_pair(v, aNeighbor));
-		if (&itr) {
+		if (itr != mEdgeToPair.end()) {
 			mPairs.erase(itr->second);
 			mEdgeToPair.erase(itr);
 		}
 		itr = mEdgeToPair.find(std::make_pair(aNeighbor, v));
-		if (&itr) {
+		if (itr != mEdgeToPair.end()) {
 			mPairs.erase(itr->second);
 			mEdgeToPair.erase(itr);
 		}
@@ -207,14 +207,19 @@ void ProgMesh::EdgeCollapse(Pair* collapsePair) {
 	bool sharedFace;
 
 	// make adjacency of newV the union of v0 and v1 adjacency lists (w/o duplicates)
-	std::vector<const Face*> v0Faces = GetAdjacentFaces(v0);
-	std::vector<const Face*> v1Faces = GetAdjacentFaces(v1);
-	std::vector<const Face*> alreadyInsertedF;
+	std::vector<Face*> v0Faces = GetAdjacentFaces(v0);
+	std::vector<Face*> v1Faces = GetAdjacentFaces(v1);
+	std::vector<Face*> alreadyInsertedF;
 
-	for (const Face* & aFace : v0Faces) {
+	for (Face* & aFace : v0Faces) {
+        // Make a copy
+        Face faceCopy(*aFace);
+        faceCopy.ReplaceVertex(v0, vNew);
+        Utilities::ReplaceObject(aFace, faceCopy);
+        
 		mVertexFaceAdjacency.insert(std::make_pair(vNew, aFace));
 		alreadyInsertedF.push_back(aFace);
-		aFace->ReplaceVertex(v0, vNew);
+		
 	}
 	for (Face* & aFace : v1Faces) {
 		sharedFace = false;
@@ -336,10 +341,11 @@ void ProgMesh::TestEdgeCollapse(unsigned int v0, unsigned int v1) {
 
 void ProgMesh::GenerateIndicesFromFaces() {
     mIndices.clear();
+    mIndices.reserve(mFaces.size() * 3);
     // Order doesn't matter for indices.
     for(auto faceItr = mFaces.begin(); faceItr != mFaces.end(); faceItr++) {
-        mIndices.push_back(faceItr->GetVertex(0));
-        mIndices.push_back(faceItr->GetVertex(1));
-        mIndices.push_back(faceItr->GetVertex(2));
+        mIndices.push_back(std::find(mVertices.begin(), mVertices.end(), *((*faceItr)->GetVertex(0))) - mVertices.begin());
+        mIndices.push_back(std::find(mVertices.begin(), mVertices.end(), *((*faceItr)->GetVertex(1))) - mVertices.begin());
+        mIndices.push_back(std::find(mVertices.begin(), mVertices.end(), *((*faceItr)->GetVertex(2))) - mVertices.begin());
     }
 }
