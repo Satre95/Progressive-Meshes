@@ -474,3 +474,8 @@ void ProgMesh::UpdatePairs(Vertex * v0, Vertex * v1, Vertex & newVertex, std::ve
 
 }
 
+/// After all operations for a particular edge collapse have been performed, need to update the GPU buffers
+void ProgMesh::UpdateBuffers(starforge::RenderDevice & renderDevice) {
+    AllocateBuffers(renderDevice);
+}
+

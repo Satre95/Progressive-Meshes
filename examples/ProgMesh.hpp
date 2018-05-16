@@ -39,8 +39,9 @@ public:
 	void EdgeCollapse(Pair* collapsePair);
 	void TestEdgeCollapse(unsigned int v0, unsigned int v1);
 	void CollapseLeastError();
-
 	void GenerateNormals();
+    
+    void UpdateBuffers(starforge::RenderDevice & renderDevice);
 private:
 
 
