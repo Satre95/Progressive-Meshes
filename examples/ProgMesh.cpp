@@ -459,5 +459,17 @@ void ProgMesh::UpdatePairs(Vertex * v0, Vertex * v1, Vertex & newVertex, std::ve
 		}
 	}
 
+	// delete pairs between v0 and v1
+	auto itr = mEdgeToPair.find(std::make_pair(v0, v1));
+	if (itr != mEdgeToPair.end()) {
+		mPairs.erase(itr->second);
+		mEdgeToPair.erase(itr);
+	}
+	itr = mEdgeToPair.find(std::make_pair(v1, v0));
+	if (itr != mEdgeToPair.end()) {
+		mPairs.erase(itr->second);
+		mEdgeToPair.erase(itr);
+	}
+
 }
 
