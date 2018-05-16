@@ -220,49 +220,68 @@ void ProgMesh::EdgeCollapse(Pair* collapsePair) {
 	// make adjacency of newV the union of v0 and v1 adjacency lists (w/o duplicates)
 	std::vector<Face*> v0Faces = GetAdjacentFaces(v0);
 	std::vector<Face*> v1Faces = GetAdjacentFaces(v1);
-	std::vector<Face*> alreadyInsertedF;
-
-	for (Face* & aFace : v0Faces) {
-    // Make a copy
-		Face faceCopy(*aFace);
-		faceCopy.ReplaceVertex(v0, &vNew);
-		Utilities::ReplaceObject(aFace, faceCopy);
-
-		mVertexFaceAdjacency.insert(std::make_pair(&vNew, aFace));
-		alreadyInsertedF.push_back(aFace);
-
-	}
-	for (Face* & aFace : v1Faces) {
-		sharedFace = false;
-		for (Face* & insertedFace : alreadyInsertedF) {
-		if ((*insertedFace) == (*aFace)) {					// found a degenerate face
-
-			// remove this face from vertex to face adjacency
-			for (unsigned int i = 0; i < 3; i++) {
-				if (!(*aFace->GetVertex(i) == *v0 || *aFace->GetVertex(i) == *v1)) vNeighbor = aFace->GetVertex(i);
-			}
-            
-            auto range = mVertexFaceAdjacency.equal_range(vNeighbor);
+    
+    //Figure out which faces will become degenerate post-collapse.
+    std::sort(v0Faces.begin(), v0Faces.end());
+    std::sort(v1Faces.begin(), v1Faces.end());
+    std::vector<Face*> degenFaces;
+    std::set_intersection(v0Faces.begin(), v0Faces.end(), v1Faces.begin(), v1Faces.end(), std::back_inserter(degenFaces));
+    
+    // Now remove degenerate faces from local v0 and v1 lists
+    v0Faces.erase(std::remove_if(v0Faces.begin(), v0Faces.end(), [degenFaces] (Face *& f) {
+        for(auto & aDegenFace: degenFaces)
+            if (*f == *aDegenFace)
+                return true;
+        return false;
+    }), v0Faces.end());
+    v1Faces.erase(std::remove_if(v1Faces.begin(), v1Faces.end(), [degenFaces] (Face *& f) {
+        for(auto & aDegenFace: degenFaces)
+            if (*f == *aDegenFace)
+                return true;
+        return false;
+    }), v1Faces.end());
+    
+    // Now, for each degenerate face, remove it from its vertex to face adjacencies
+    // In doing so, each degen face is removed for v0 and v1 in master arrays
+    for(auto *& aDegenFace: degenFaces) {
+        for (size_t i = 0; i < 3; i++) {
+            auto range = mVertexFaceAdjacency.equal_range(aDegenFace->GetVertex(i));
             for (auto it = range.first; it != range.second;) {
-                if (*(it->second) == (*insertedFace)) {
+                if (*(it->second) == (*aDegenFace)) {
                     mVertexFaceAdjacency.erase(it);
-                }
-                else
-                    ++it;
+                    break;
+                } else it++;
             }
-			sharedFace = true;
-
-			mFaces.erase(aFace);
-			delete aFace; aFace = nullptr; // NOTE: Must call in this order
-
-
-			}
-		}
-		if (!sharedFace) {
-			mVertexFaceAdjacency.insert(std::make_pair(&vNew, aFace));
-			aFace->ReplaceVertex(v1, &vNew);
-		}
-	}
+        }
+    }
+    
+    // Now, delete degen faces from master faces list
+    for(auto *& aDegenFace: degenFaces) {
+        mFaces.erase(aDegenFace);
+        delete aDegenFace; aDegenFace = nullptr;
+    }
+    degenFaces.clear(); // Sanity
+    
+    // Now, iterate over the remainining non-degen faces adj to v0 and v1 and assign new vertex
+    for(auto *& v0Face: v0Faces) {
+        // Make a copy
+        Face faceCopy(*v0Face);
+        faceCopy.ReplaceVertex(v0, &vNew);
+        Utilities::ReplaceObject(v0Face, faceCopy);
+        
+        mVertexFaceAdjacency.insert(std::make_pair(&vNew, v0Face));
+    }
+    for(auto *& v1Face: v1Faces) {
+        // Make a copy
+        Face faceCopy(*v1Face);
+        faceCopy.ReplaceVertex(v1, &vNew);
+        Utilities::ReplaceObject(v1Face, faceCopy);
+        
+        mVertexFaceAdjacency.insert(std::make_pair(&vNew, v1Face));
+    }
+    
+    // At this point, all degenerate faces have been removed, a new vertex has been created,
+    // and the mVertexFaceAdjacency has been updated to reflect the removals and creation of new vertex and faces.
 
 	// update mEdges
 	std::vector<Vertex*> v0Vertex = GetConnectedVertices(v0);
