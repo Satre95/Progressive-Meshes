@@ -177,9 +177,7 @@ void ProgMesh::PreparePairs() {
 	}
 }
 
-void ProgMesh::DeletePairsWithNeighbor(Vertex* v) {
-
-	std::vector<Vertex* > neighbors = GetConnectedVertices(v);
+void ProgMesh::DeletePairsWithNeighbor(Vertex* v, std::vector<Vertex* >& neighbors) {
 
 	for (Vertex* & aNeighbor : neighbors) {
 		auto itr = mEdgeToPair.find(std::make_pair(v, aNeighbor));
@@ -193,6 +191,24 @@ void ProgMesh::DeletePairsWithNeighbor(Vertex* v) {
 			mEdgeToPair.erase(itr);
 		}
 	}
+}
+
+void ProgMesh::CalculateAndStorePair(Vertex* vA, Vertex * vB) {
+
+	Pair* pairAB = new Pair(vA, vB);
+	Pair* pairBA = new Pair(vB, vA);
+
+	Vertex vOptimal = pairAB->CalcOptimal();
+	float error = glm::dot(vOptimal.mPos,
+			(mQuadrics[vA] + mQuadrics[vB]) * vOptimal.mPos);
+
+
+	auto itr = mPairs.insert(std::make_pair(error, pairAB));
+	mEdgeToPair.insert(std::make_pair(std::make_pair(vA, vB), itr));
+
+	itr = mPairs.insert(std::make_pair(error, pairBA));
+	mEdgeToPair.insert(std::make_pair(std::make_pair(vB, vA), itr));
+	
 }
 
 // need to update mVector, mFaces, mVertexFaceAdjacency, mEdges, mQuadrics
@@ -210,40 +226,12 @@ void ProgMesh::EdgeCollapse(Pair* collapsePair) {
     UpdateFaces(v0, v1, vNew);
     
     // 2. Update Edges (Create new edges, delete degenerates)
-    UpdateEdgesAndQuadrics(v0, v1, vNew);
+	std::vector<Vertex* >& neighbors = UpdateEdgesAndQuadrics(v0, v1, vNew);
 
+	// 3. Update Pairs
+	UpdatePairs(v0, v1, vNew, neighbors);
 
-	// remove pairs with soon to be outdated errors
-//    for (Vertex* & aVertex : v0Vertex) {
-//        DeletePairsWithNeighbor(aVertex);
-//    }
-//    for (Vertex* & aVertex : v1Vertex) {
-//        DeletePairsWithNeighbor(aVertex);
-//    }
-
-
-	
-
-	// add pairs (now that quadrics are updated need to reorder tree for new errors)
-	std::vector<Vertex*> neighbors;
-	Pair* newPair;
-	Vertex vOptimal;
-	float error;
-
-	for (Vertex* & aVertex : surroundingVertices) {
-		neighbors = GetConnectedVertices(aVertex);
-		for (Vertex* & aNeighbor : neighbors) {
-			newPair = new Pair(aVertex, aNeighbor);
-
-			vOptimal = newPair->CalcOptimal();
-			error = glm::dot(vOptimal.mPos,
-				(mQuadrics[aVertex] + mQuadrics[aNeighbor]) * vOptimal.mPos);
-
-			std::multimap<float, Pair *>::iterator itr = mPairs.insert(std::make_pair(error, newPair));
-			mEdgeToPair.insert(std::make_pair(std::make_pair(aVertex, aNeighbor), itr));
-		}
-	}
-
+	// 4. (Regen indices for rendering)
 	GenerateIndicesFromFaces();
 
 }
@@ -382,7 +370,7 @@ void ProgMesh::UpdateFaces(Vertex * v0, Vertex * v1, Vertex & vNew) {
     // and the mVertexFaceAdjacency has been updated to reflect the removals and creation of new vertex and faces.
 }
 
-void ProgMesh::UpdateEdgesAndQuadrics(Vertex * v0, Vertex * v1, Vertex & newVertex) {
+std::vector<Vertex* >& ProgMesh::UpdateEdgesAndQuadrics(Vertex * v0, Vertex * v1, Vertex & newVertex) {
     auto v0Neighbors = GetConnectedVertices(v0);
     auto v1Neighbors = GetConnectedVertices(v1);
     std::sort(v0Neighbors.begin(), v0Neighbors.end());
@@ -394,6 +382,10 @@ void ProgMesh::UpdateEdgesAndQuadrics(Vertex * v0, Vertex * v1, Vertex & newVert
     // 'Edges' are really directed edges between two vertices
     // Remove all the incoming edges into v0 v1 from their neighbors.
     for(auto *& aNeighbor: allNeighbors) {
+
+		//pairs
+
+
         auto range = mEdges.equal_range(aNeighbor);
         for(auto it = range.first; it != range.second;) {
             if (it->second == v0) {
@@ -441,6 +433,31 @@ void ProgMesh::UpdateEdgesAndQuadrics(Vertex * v0, Vertex * v1, Vertex & newVert
 	}
 	// add a quadric for the new vertex
 	mQuadrics.insert(std::make_pair(&newVertex, ComputeQuadric(&newVertex)));
+
+	return allNeighbors;
     
+}
+
+void ProgMesh::UpdatePairs(Vertex * v0, Vertex * v1, Vertex & newVertex, std::vector<Vertex* >& neighbors)
+{
+	// Deleting all pairs with v0 and v1 as one of the vertices
+	DeletePairsWithNeighbor(v0, neighbors);
+	DeletePairsWithNeighbor(v1, neighbors);
+
+	// Delete the rest of the pairs that are connected to vertices whose quadrics have been updated
+	for (auto & aNeighbor : neighbors) {
+		auto inLaws = GetConnectedVertices(aNeighbor);
+		DeletePairsWithNeighbor(aNeighbor, inLaws);
+	}
+
+	// add pairs from every vertex whose quadric was affected to its new neighbors
+	// (since edges have already been updated this includes the new vertex)
+	for (auto & aNeighbor : neighbors) {
+		auto inLaws = GetConnectedVertices(aNeighbor);
+		for (auto & inLaw : inLaws) {
+			CalculateAndStorePair(aNeighbor, inLaw);
+		}
+	}
+
 }
 

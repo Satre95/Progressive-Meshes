@@ -36,7 +36,6 @@ public:
 	glm::mat4 ComputeQuadric(Vertex * aVertex) const;
 	/// Computes initial quadrics and pairs and sorts the latter by smallest error
 	void PreparePairs();
-	void DeletePairsWithNeighbor(Vertex* v);
 	void EdgeCollapse(Pair* collapsePair);
 	void TestEdgeCollapse(unsigned int v0, unsigned int v1);
 	void CollapseLeastError();
@@ -46,8 +45,11 @@ private:
 
 
 	void GenerateIndicesFromFaces();
+	void DeletePairsWithNeighbor(Vertex* v, std::vector<Vertex* >& neighbors);
+	void CalculateAndStorePair(Vertex* vA, Vertex * vB);
     void UpdateFaces(Vertex * v0, Vertex * v1, Vertex & newVertex);
-    void UpdateEdgesAndQuadrics(Vertex * v0, Vertex * v1, Vertex & newVertex);
+	std::vector<Vertex* >& UpdateEdgesAndQuadrics(Vertex * v0, Vertex * v1, Vertex & newVertex);
+	void UpdatePairs(Vertex * v0, Vertex * v1, Vertex & newVertex, std::vector<Vertex* >& neighbors);
     
 	/// The vertices that compose this ProgMesh
 	std::vector<Vertex> mVertices;
