@@ -1,7 +1,6 @@
 #include "Platform.hpp"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -170,6 +169,7 @@ namespace platform
 			s_Model = glm::mat4_cast(quat) * s_LastModel;
 		}
 	}
+
 	PLATFORM_WINDOW_REF CreatePlatformWindow(int width, int height, const char *title)
 	{
 		set_viewport_size(width, height);

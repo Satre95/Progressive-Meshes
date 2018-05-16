@@ -4,6 +4,9 @@
 #include <string>
 
 #include <glm/gtc/type_ptr.hpp>
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+
 #include "ProgMesh.hpp"
 #include "ProgModel.hpp"
 #include "ProgMesh.hpp"
@@ -11,6 +14,8 @@
 #include "Platform.hpp"
 #include "RenderDevice.hpp"
 
+static void keyboard_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+ProgModelRef aModel;
 
 int main(int argc, char *argv[]) {
     if(argc <= 1) {
@@ -24,6 +29,7 @@ int main(int argc, char *argv[]) {
         platform::TerminatePlatform();
         return -1;
     }
+    glfwSetKeyCallback((GLFWwindow *)window, keyboard_callback);
 
     starforge::RenderDevice *renderDevice = starforge::CreateRenderDevice();
 
@@ -57,7 +63,7 @@ int main(int argc, char *argv[]) {
     starforge::PipelineParam * uArcballParam = pipeline->GetParam("uArcball");
     starforge::PipelineParam * uNormalMatParam = pipeline->GetParam("uNormalMatrix");
 
-    ProgModelRef aModel = std::make_shared<ProgModel>(std::string(argv[1]));
+    aModel = std::make_shared<ProgModel>(std::string(argv[1]));
     aModel->PrintInfo(std::cout);
     for(auto & aMesh: aModel->GetMeshes()) {
         aMesh->AllocateBuffers(*renderDevice);
@@ -90,8 +96,13 @@ int main(int argc, char *argv[]) {
     }
 
     renderDevice->DestroyPipeline(pipeline);
+    aModel.reset();
 
     starforge::DestroyRenderDevice(renderDevice);
     platform::TerminatePlatform();
     return 0;
+}
+
+static void keyboard_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+
 }
