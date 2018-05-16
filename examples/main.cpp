@@ -2,6 +2,8 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <chrono>
+#include <ratio>
 
 #include <glm/gtc/type_ptr.hpp>
 #include <glad/glad.h>
@@ -74,6 +76,8 @@ int main(int argc, char *argv[]) {
 
     renderDevice->SetPipeline(pipeline);
 
+    auto prevFrameTime = std::chrono::steady_clock::now();
+
     // Main run loop
     while(platform::PollPlatformWindow(window)) {
         renderDevice->Clear(0.2f, 0.3f, 0.3f);
@@ -91,11 +95,21 @@ int main(int argc, char *argv[]) {
 
             glm::mat3 normMat = glm::mat3(glm::transpose(glm::inverse(modelMat * arcball)));
             uNormalMatParam->SetAsMat3(glm::value_ptr(normMat));
+
+//            auto now = std::chrono::steady_clock::now();
+//            auto delta = now - prevFrameTime;
+
+//            if(delta.count() > 500.0) {
+//                aMesh->CollapseLeastError();
+//                aMesh->UpdateBuffers(*renderDevice);
+//                prevFrameTime = now;
+//            }
+
             uUseUniformColorParam->SetAsBool(false);
             uComputeShadingParam->SetAsBool(true);
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             aMesh->Draw(*renderDevice);
-            
+
             uUseUniformColorParam->SetAsBool(true);
             uComputeShadingParam->SetAsBool(false);
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);

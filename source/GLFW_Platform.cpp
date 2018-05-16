@@ -27,7 +27,7 @@ namespace platform
 	static glm::vec2 s_MousePt;
 	static bool s_isDragging = false;
 
-	static glm::mat4 s_View = glm::translate(glm::mat4(1), glm::vec3(0, 0, -100));
+	static glm::mat4 s_View = glm::translate(glm::mat4(1), glm::vec3(0, 0, -50));
 
 	static void scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
 	{

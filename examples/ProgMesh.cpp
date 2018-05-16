@@ -187,7 +187,7 @@ void ProgMesh::PreparePairsAndQuadrics() {
 	}
 }
 
-void ProgMesh::DeletePairsWithNeighbor(Vertex* v, std::vector<Vertex* >& neighbors) {
+void ProgMesh::DeletePairsWithNeighbor(Vertex* v, std::vector<Vertex* > neighbors) {
 
 	for (Vertex* & aNeighbor : neighbors) {
 		auto itr = mEdgeToPair.find(std::make_pair(v, aNeighbor));
@@ -237,15 +237,15 @@ void ProgMesh::EdgeCollapse(Pair* collapsePair) {
     // 2. Update Edges (Create new edges, delete degenerates)
 	std::vector<Vertex* > neighbors = UpdateEdgesAndQuadrics(v0, v1, *vNew);
 
-	// 3. Update Pairs
-	UpdatePairs(v0, v1, *vNew, neighbors);
-    
     // 4. Remove v0 and v1 from master vertices array.
     mVertices.erase(std::remove_if(mVertices.begin(), mVertices.end(), [v0, v1] (Vertex *& v) {
         return (*v == *v0) || (*v == *v1);
     }), mVertices.end());
     delete v0; delete v1;
     v0 = nullptr; v1 = nullptr;
+
+	// 3. Update Pairs
+	UpdatePairs(v0, v1, *vNew, neighbors);
 
 	// 5. (Regen indices for rendering)
 	GenerateIndicesFromFaces();
@@ -454,6 +454,7 @@ std::vector<Vertex* > ProgMesh::UpdateEdgesAndQuadrics(Vertex * v0, Vertex * v1,
 
 void ProgMesh::UpdatePairs(Vertex * v0, Vertex * v1, Vertex & newVertex, std::vector<Vertex* > neighbors)
 {
+    /*
 	// Deleting all pairs with v0 and v1 as one of the vertices
 	DeletePairsWithNeighbor(v0, neighbors);
 	DeletePairsWithNeighbor(v1, neighbors);
@@ -476,38 +477,30 @@ void ProgMesh::UpdatePairs(Vertex * v0, Vertex * v1, Vertex & newVertex, std::ve
 	// delete pairs between v0 and v1
 	auto itr = mEdgeToPair.find(std::make_pair(v0, v1));
 	if (itr != mEdgeToPair.end()) {
-		mPairs.erase(itr->second);
+		auto numErased = mPairs.erase(itr->second->first);
 		mEdgeToPair.erase(itr);
     }
     
 	itr = mEdgeToPair.find(std::make_pair(v1, v0));
 	if (itr != mEdgeToPair.end()) {
-		mPairs.erase(itr->second);
+		auto numErased = mPairs.erase(itr->second->first);
 		mEdgeToPair.erase(itr);
     }
+    */
     
-    itr = mEdgeToPair.find(std::make_pair(v0, v1));
-    if (itr != mEdgeToPair.end()) {
-        std::cout << "You done fucked up" << std::endl;
-    }
-    
-    itr = mEdgeToPair.find(std::make_pair(v1, v0));
-    if (itr != mEdgeToPair.end()) {
-        std::cout << "SMH" << std::endl;
-    }
-    
-    for (auto & aPair : mPairs) {
-//        if (*aPair.second.v0 == *v0 || *aPair.second.v1 == *v0) {
-//            std::cout << "ERROR: found v0 again" << std::endl;
+
+
+    // Clear all pairs and regen.
+    //TODO: Fix the individual updating above
+    mPairs.clear();
+    mEdgeToPair.clear();
+
+    PreparePairsAndQuadrics();
+//    for (auto & aPair : mPairs) {
+//        if( (*aPair.second.v0 == *v0 || *aPair.second.v1 == *v0) && (*aPair.second.v0 == *v1 || *aPair.second.v1 == *v1)) {
+//            std::cout << "ERROR: Found v0 and v1 pair in mPairs after it should have been removed" << std::endl;
 //        }
-//        if (*aPair.second.v0 == *v1 || *aPair.second.v1 == *v1) {
-//            std::cout << "ERROR: found v1 again" << std::endl;
-//        }
-        
-        if( (*aPair.second.v0 == *v0 || *aPair.second.v1 == *v0) && (*aPair.second.v0 == *v1 || *aPair.second.v1 == *v1)) {
-            std::cout << "ERROR: Found v0 and v1 pair in mPairs after it should have been removed" << std::endl;
-        }
-    }
+//    }
 }
 
 /// After all operations for a particular edge collapse have been performed, need to update the GPU buffers
