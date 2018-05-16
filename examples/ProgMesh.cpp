@@ -210,7 +210,7 @@ void ProgMesh::EdgeCollapse(Pair* collapsePair) {
 
 	Vertex* v0 = collapsePair->v0;
 	Vertex* v1 = collapsePair->v1;
-	Vertex* vNeighbor;
+	Vertex* vNeighbor = nullptr;
 	bool sharedFace;
 
 	// Insert replacement vertex vNew into master array
