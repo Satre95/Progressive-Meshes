@@ -222,13 +222,7 @@ void ProgMesh::EdgeCollapse(Pair* collapsePair) {
 //    }
 
 
-	// update mQuadrics
-	std::vector<Vertex* > surroundingVertices = GetConnectedVertices(&vNew);
-	for (Vertex* & aVertex : surroundingVertices) {
-		auto itr = mQuadrics.find(aVertex);
-		itr->second = ComputeQuadric(aVertex);
-	}
-	mQuadrics.insert(std::make_pair(&vNew, ComputeQuadric(&vNew)));
+	
 
 	// add pairs (now that quadrics are updated need to reorder tree for new errors)
 	std::vector<Vertex*> neighbors;
@@ -435,7 +429,18 @@ void ProgMesh::UpdateEdgesAndQuadrics(Vertex * v0, Vertex * v1, Vertex & newVert
     }
     
     // Done updating edges.
-    
+
+	// remove quadrics for v0 and v1
+	mQuadrics.erase(v0);
+	mQuadrics.erase(v1);
+
+	// update mQuadrics for vertices whose adjacent planes have changed
+	for (auto & aNeighbor : allNeighbors) {
+		auto itr = mQuadrics.find(aNeighbor);
+		itr->second = ComputeQuadric(aNeighbor);
+	}
+	// add a quadric for the new vertex
+	mQuadrics.insert(std::make_pair(&newVertex, ComputeQuadric(&newVertex)));
     
 }
 
