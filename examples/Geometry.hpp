@@ -38,7 +38,10 @@ struct Vertex {
 
 
 inline bool operator==(const Vertex & lhs, const Vertex & rhs)  {
-    return lhs.mId == rhs.mId;
+    return (lhs.mId == rhs.mId)
+            && (lhs.mPos == rhs.mPos)
+            && (lhs.mNormal == rhs.mNormal)
+            && (lhs.mColor == rhs.mColor);
 }
 
 struct Face
@@ -165,5 +168,8 @@ struct FacePtrHash {
 };
 
 inline bool operator==(const Face & lhs, const Face & rhs) {
-    return lhs.mId == rhs.mId;
+    return (lhs.mId == rhs.mId)
+        && (*(lhs.mVertices[0]) == *(rhs.mVertices[0]))
+        && (*(lhs.mVertices[1]) == *(rhs.mVertices[1]))
+        && (*(lhs.mVertices[2]) == *(rhs.mVertices[2]));
 }
