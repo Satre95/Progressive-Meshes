@@ -16,6 +16,7 @@
 
 static void keyboard_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 ProgModelRef aModel;
+starforge::RenderDevice *renderDevice;
 
 int main(int argc, char *argv[]) {
     if(argc <= 1) {
@@ -31,7 +32,7 @@ int main(int argc, char *argv[]) {
     }
     glfwSetKeyCallback((GLFWwindow *)window, keyboard_callback);
 
-    starforge::RenderDevice *renderDevice = starforge::CreateRenderDevice();
+    renderDevice = starforge::CreateRenderDevice();
 
     // Load the shaders and create the pipeline.
     std::ifstream vShaderFile("data/shaders/standard.vert");
@@ -62,7 +63,9 @@ int main(int argc, char *argv[]) {
     starforge::PipelineParam *uProjectionParam = pipeline->GetParam("uProjection");
     starforge::PipelineParam * uArcballParam = pipeline->GetParam("uArcball");
     starforge::PipelineParam * uNormalMatParam = pipeline->GetParam("uNormalMatrix");
-
+    starforge::PipelineParam * uComputeShadingParam = pipeline->GetParam("uComputeShading");
+    starforge::PipelineParam * uUseUniformColorParam = pipeline->GetParam("uUseUniformColor");
+    
     aModel = std::make_shared<ProgModel>(std::string(argv[1]));
     aModel->PrintInfo(std::cout);
     for(auto & aMesh: aModel->GetMeshes()) {
@@ -88,8 +91,16 @@ int main(int argc, char *argv[]) {
 
             glm::mat3 normMat = glm::mat3(glm::transpose(glm::inverse(modelMat * arcball)));
             uNormalMatParam->SetAsMat3(glm::value_ptr(normMat));
-
+            uUseUniformColorParam->SetAsBool(false);
+            uComputeShadingParam->SetAsBool(true);
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             aMesh->Draw(*renderDevice);
+            
+            uUseUniformColorParam->SetAsBool(true);
+            uComputeShadingParam->SetAsBool(false);
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            aMesh->Draw(*renderDevice);
+            
         }
 
         platform::PresentPlatformWindow(window);
@@ -110,6 +121,7 @@ static void keyboard_callback(GLFWwindow* window, int key, int scancode, int act
 		for (auto aMesh : aModel->GetMeshes()) {
 
 			aMesh->CollapseLeastError();
+            aMesh->UpdateBuffers(*renderDevice);
 
 		}
 

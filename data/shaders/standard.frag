@@ -19,6 +19,8 @@ uniform DirectLight dLight2 = DirectLight(
 								);
 
 uniform bool uComputeShading = true;
+uniform bool uUseUniformColor = false;
+uniform vec4 uUniformColor = vec4(1.f);
 
 in vec3 FragPos;
 in vec3 FragNormal;
@@ -46,9 +48,12 @@ void main()
 
 		FragColor = vec4((ambient1 + ambient2 + diffuse1 + diffuse2) * FragVertColor.xyz, 1.f);
 		FragColor.a = FragVertColor.a;
-		//FragColor.xyz = FragNormal;
 	}
 	else {
-		FragColor = FragVertColor;
+		if(uUseUniformColor) {
+			FragColor = uUniformColor;
+		} else {
+			FragColor = FragVertColor;
+		}
 	}
 }
