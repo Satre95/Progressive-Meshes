@@ -47,7 +47,7 @@ private:
 
 	void GenerateIndicesFromFaces();
     void UpdateFaces(Vertex * v0, Vertex * v1, Vertex & newVertex);
-    void UpdateEdges(Vertex * v0, Vertex * v1, Vertex & newVertex);
+    void UpdateEdgesAndQuadrics(Vertex * v0, Vertex * v1, Vertex & newVertex);
     
 	/// The vertices that compose this ProgMesh
 	std::vector<Vertex> mVertices;
