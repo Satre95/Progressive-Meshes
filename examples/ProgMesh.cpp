@@ -239,8 +239,15 @@ void ProgMesh::EdgeCollapse(Pair* collapsePair) {
 
 	// 3. Update Pairs
 	UpdatePairs(v0, v1, *vNew, neighbors);
+    
+    // 4. Remove v0 and v1 from master vertices array.
+    mVertices.erase(std::remove_if(mVertices.begin(), mVertices.end(), [v0, v1] (Vertex *& v) {
+        return (*v == *v0) || (*v == *v1);
+    }), mVertices.end());
+    delete v0; delete v1;
+    v0 = nullptr; v1 = nullptr;
 
-	// 4. (Regen indices for rendering)
+	// 5. (Regen indices for rendering)
 	GenerateIndicesFromFaces();
 
 }
@@ -393,8 +400,6 @@ std::vector<Vertex* > ProgMesh::UpdateEdgesAndQuadrics(Vertex * v0, Vertex * v1,
     for(auto *& aNeighbor: allNeighbors) {
 
 		//pairs
-
-
         auto range = mEdges.equal_range(aNeighbor);
         for(auto it = range.first; it != range.second;) {
             if (it->second == v0) {
@@ -479,6 +484,16 @@ void ProgMesh::UpdatePairs(Vertex * v0, Vertex * v1, Vertex & newVertex, std::ve
 	if (itr != mEdgeToPair.end()) {
 		mPairs.erase(itr->second);
 		mEdgeToPair.erase(itr);
+    }
+    
+    itr = mEdgeToPair.find(std::make_pair(v0, v1));
+    if (itr != mEdgeToPair.end()) {
+        std::cout << "You done fucked up" << std::endl;
+    }
+    
+    itr = mEdgeToPair.find(std::make_pair(v1, v0));
+    if (itr != mEdgeToPair.end()) {
+        std::cout << "SMH" << std::endl;
     }
 }
 

@@ -121,7 +121,7 @@ public:
         return *this;
     }
 	Vertex CalcOptimal() { 
-		return Vertex( ((v0->mPos + v1->m=Pos)/2.0f),
+		return Vertex( ((v0->mPos + v1->mPos) / 2.0f),
                       glm::normalize(((v0->mNormal + v1->mNormal))),
 						((v0->mColor + v1->mColor) / 2.0f) ); 
 	}
