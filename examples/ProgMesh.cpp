@@ -239,7 +239,7 @@ void ProgMesh::EdgeCollapse(Pair* collapsePair) {
 
 			// remove this face from vertex to face adjacency
 			for (unsigned int i = 0; i < 3; i++) {
-				if (aFace->GetVertex(i) != v0 && aFace->GetVertex(i) != v1) vNeighbor = aFace->GetVertex(i);
+				if (!(*aFace->GetVertex(i) == *v0 || *aFace->GetVertex(i) == *v1)) vNeighbor = aFace->GetVertex(i);
 			}
             
             auto range = mVertexFaceAdjacency.equal_range(vNeighbor);
@@ -359,6 +359,7 @@ void ProgMesh::CollapseLeastError() {
 	auto itr = mPairs.begin();
 	std::cout << "Collapsing pair: " << itr->second->v0 << ", " << itr->second->v1 << std::endl;
 	EdgeCollapse(itr->second);
+	PrintConnectivity(std::cout);
 }
 
 // just used for testing specific collapses
@@ -417,23 +418,4 @@ void ProgMesh::GenerateNormals() {
     for (int i = 0; i < mVertices.size(); i++) {
         mVertices.at(i).mNormal = glm::normalize(mVertices.at(i).mNormal);
     }
-    /*
-    
-	// Sum up normals
-	for(auto & facePtr: mFaces) {
-		auto normal = facePtr->GetNormal();
-		Vertex & v0 = mVertices.at(std::find(mVertices.begin(), mVertices.end(), *(facePtr->GetVertex(0))) - mVertices.begin());
-		Vertex & v1 = mVertices.at(std::find(mVertices.begin(), mVertices.end(), *(facePtr->GetVertex(1))) - mVertices.begin());
-		Vertex & v2 = mVertices.at(std::find(mVertices.begin(), mVertices.end(), *(facePtr->GetVertex(2))) - mVertices.begin());
-
-		v0.mNormal += normal;
-		v1.mNormal += normal;
-		v2.mNormal += normal;
-	}
-
-	// Normalize the normals :)
-	for(Vertex & aVertex: mVertices) {
-		aVertex.mNormal = glm::normalize(aVertex.mNormal);
-	}
-     */
 }
