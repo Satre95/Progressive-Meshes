@@ -100,7 +100,7 @@ struct Face
 
 class Pair {
 public:
-	
+    Pair() = default;
 	Pair(Vertex & vStart, Vertex & vEnd):
 	v0(&vStart), v1(&vEnd)
 	{}
@@ -112,10 +112,17 @@ public:
 	Pair(const Pair & other):
 	v0(other.v0), v1(other.v1)
 	{}
-
+    
+    Pair & operator=(const Pair & other) {
+        if(other.v0 != v0 && other.v1 != v1) {
+            v0 = other.v0;
+            v1 = other.v1;
+        }
+        return *this;
+    }
 	Vertex CalcOptimal() { 
-		return Vertex( ((v0->mPos + v1->mPos)/2.0f),
-						((v0->mNormal + v1->mNormal) / 2.0f), 
+		return Vertex( ((v0->mPos + v1->m=Pos)/2.0f),
+                      glm::normalize(((v0->mNormal + v1->mNormal))),
 						((v0->mColor + v1->mColor) / 2.0f) ); 
 	}
 

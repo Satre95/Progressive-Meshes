@@ -18,8 +18,12 @@ size_t Face::sCount = 0;
 //}
 
 ProgMesh::ProgMesh(std::vector<Vertex> & _verts, std::vector<uint32_t > & _indices) :
-mVertices(_verts), mIndices(_indices) {
-	mVertices.reserve(mVertices.size() * mVertices.size() - 1);							// TODO: make legit removal
+mIndices(_indices) {
+    mVertices.reserve(_verts.size());
+    for (Vertex & aVert : _verts) {
+        Vertex * newVert = new Vertex(aVert);
+        mVertices.push_back(newVert);
+    }
 	for (int i = 0; i < _indices.size(); i+=3) {
 		mFaces.insert(new Face(mVertices.at(_indices.at(i)), mVertices.at(_indices.at(i+1)), mVertices.at(_indices.at(i+2))));
 	}
@@ -29,17 +33,28 @@ ProgMesh::~ProgMesh() {
 	for(auto & facePtr: mFaces) {
 		delete facePtr;
 	}
+    
+    for (auto & vertPtr : mVertices) {
+        delete vertPtr;
+    }
 }
 
 void ProgMesh::AllocateBuffers(starforge::RenderDevice &renderDevice) {
-if(mVAO) renderDevice.DestroyVertexArray(mVAO);
-if(mVBO) renderDevice.DestroyVertexBuffer(mVBO);
-if(mIBO) renderDevice.DestroyIndexBuffer(mIBO);
-if(mVertexDescription) renderDevice.DestroyVertexDescription(mVertexDescription);
+    if(mVAO) renderDevice.DestroyVertexArray(mVAO);
+    if(mVBO) renderDevice.DestroyVertexBuffer(mVBO);
+    if(mIBO) renderDevice.DestroyIndexBuffer(mIBO);
+    if(mVertexDescription) renderDevice.DestroyVertexDescription(mVertexDescription);
+    
+    // Make a local contiguous array to copy verts into GPU buffer
+    std::vector<Vertex> localVerts;
+    localVerts.reserve(mVertices.size());
+    for (auto & vertPtr : mVertices) {
+        localVerts.push_back(*vertPtr);
+    }
 
-mVBO = renderDevice.CreateVertexBuffer(mVertices.size() * sizeof(Vertex), mVertices.data());
-mIBO = renderDevice.CreateIndexBuffer(mIndices.size() * sizeof(uint32_t), mIndices.data());
-starforge::VertexElement vertexElements[] = {
+    mVBO = renderDevice.CreateVertexBuffer(mVertices.size() * sizeof(Vertex), localVerts.data());
+    mIBO = renderDevice.CreateIndexBuffer(mIndices.size() * sizeof(uint32_t), mIndices.data());
+    starforge::VertexElement vertexElements[] = {
         {0, starforge::VERTEXELEMENTTYPE_FLOAT, 4, sizeof(Vertex), 0}, // Position attribute
         {1, starforge::VERTEXELEMENTTYPE_FLOAT, 4, sizeof(Vertex), sizeof(glm::vec4)}, // Normal attribute
         {2, starforge::VERTEXELEMENTTYPE_FLOAT, 4, sizeof(Vertex), sizeof(glm::vec4) * 2} // Color attribute.
@@ -151,29 +166,23 @@ glm::mat4 ProgMesh::ComputeQuadric(Vertex * aVertex) const {
 	return Q;
 }
 
-void ProgMesh::PreparePairs() {
+void ProgMesh::PreparePairsAndQuadrics() {
+	for (Vertex *& aVertex : mVertices) {
+        // Compute quadric for each vertex
+		mQuadrics.insert(std::make_pair(aVertex, ComputeQuadric(aVertex)));
 
-	std::vector<Vertex*> neighbors;
-	Pair* newPair;
-	Vertex vOptimal;
-	float error;
-
-	for (Vertex & aVertex : mVertices) {
-	// Compute quadric for each vertex
-		mQuadrics.insert(std::make_pair(&aVertex, ComputeQuadric(&aVertex)));
-
-	// Compute error for each pair and order them
-		neighbors = GetConnectedVertices(&aVertex);
+        // Compute error for each pair and order them
+		auto neighbors = GetConnectedVertices(aVertex);
 		for (Vertex* & aNeighbor : neighbors) {
-			newPair = new Pair(&aVertex, aNeighbor);
+			Pair newPair(aVertex, aNeighbor);
 
-		// only midpoint TODO - can definetly make this the legit optimal w/o too much trouble
-			vOptimal = newPair->CalcOptimal();
-			error = glm::dot(vOptimal.mPos, 
-				(mQuadrics[&aVertex] + mQuadrics[aNeighbor]) * vOptimal.mPos);
+            // only midpoint TODO - can definetly make this the legit optimal w/o too much trouble
+			Vertex vOptimal = newPair.CalcOptimal();
+            float error = glm::dot(vOptimal.mPos,
+				(mQuadrics[aVertex] + mQuadrics[aNeighbor]) * vOptimal.mPos);
 
-			std::multimap<float, Pair *>::iterator itr = mPairs.insert(std::make_pair(error, newPair));
-			mEdgeToPair.insert(std::make_pair(std::make_pair(&aVertex, aNeighbor), itr));
+			auto itr = mPairs.insert(std::make_pair(error, newPair));
+			mEdgeToPair.insert(std::make_pair(std::make_pair(aVertex, aNeighbor), itr));
 		}
 	}
 }
@@ -196,10 +205,10 @@ void ProgMesh::DeletePairsWithNeighbor(Vertex* v, std::vector<Vertex* >& neighbo
 
 void ProgMesh::CalculateAndStorePair(Vertex* vA, Vertex * vB) {
 
-	Pair* pairAB = new Pair(vA, vB);
-	Pair* pairBA = new Pair(vB, vA);
+	Pair pairAB(vA, vB);
+	Pair pairBA(vB, vA);
 
-	Vertex vOptimal = pairAB->CalcOptimal();
+	Vertex vOptimal = pairAB.CalcOptimal();
 	float error = glm::dot(vOptimal.mPos,
 			(mQuadrics[vA] + mQuadrics[vB]) * vOptimal.mPos);
 
@@ -214,23 +223,22 @@ void ProgMesh::CalculateAndStorePair(Vertex* vA, Vertex * vB) {
 
 // need to update mVector, mFaces, mVertexFaceAdjacency, mEdges, mQuadrics
 void ProgMesh::EdgeCollapse(Pair* collapsePair) {
-    const Vertex vNewLocal = collapsePair->CalcOptimal();
+    Vertex * vNew = new Vertex(collapsePair->CalcOptimal());
     
     Vertex* v0 = collapsePair->v0;
     Vertex* v1 = collapsePair->v1;
     
     // Insert replacement vertex vNew into master array
-    mVertices.push_back(vNewLocal);
-    Vertex & vNew = mVertices.back();
+    mVertices.push_back(vNew);
     
     // 1. Update Faces ( Create new faces, remove degenerates)
-    UpdateFaces(v0, v1, vNew);
+    UpdateFaces(v0, v1, *vNew);
     
     // 2. Update Edges (Create new edges, delete degenerates)
-	std::vector<Vertex* > neighbors = UpdateEdgesAndQuadrics(v0, v1, vNew);
+	std::vector<Vertex* > neighbors = UpdateEdgesAndQuadrics(v0, v1, *vNew);
 
 	// 3. Update Pairs
-	UpdatePairs(v0, v1, vNew, neighbors);
+	UpdatePairs(v0, v1, *vNew, neighbors);
 
 	// 4. (Regen indices for rendering)
 	GenerateIndicesFromFaces();
@@ -240,16 +248,16 @@ void ProgMesh::EdgeCollapse(Pair* collapsePair) {
 void ProgMesh::CollapseLeastError() {
 
 	auto itr = mPairs.begin();
-	std::cout << "Collapsing pair: " << itr->second->v0 << ", " << itr->second->v1 << std::endl;
-	EdgeCollapse(itr->second);
+	std::cout << "Collapsing pair: " << itr->second.v0 << ", " << itr->second.v1 << std::endl;
+	EdgeCollapse(&(itr->second));
 	PrintConnectivity(std::cout);
 }
 
 // just used for testing specific collapses
 // in practice will only use min error pair, never have to search for pair given v0 v1 except here
 void ProgMesh::TestEdgeCollapse(unsigned int v0, unsigned int v1) {
-	Vertex* vStart = &mVertices[v0];
-	Vertex* vEnd = &mVertices[v1];
+	Vertex* vStart = mVertices.at(v0);
+	Vertex* vEnd = mVertices.at(v1);
 	glm::vec4 vOptimal = (vStart->mPos + vEnd->mPos / 2.0f);
 
 	float error = glm::dot(vOptimal,(mQuadrics[vStart] + mQuadrics[vEnd]) * vOptimal);
@@ -260,7 +268,7 @@ void ProgMesh::TestEdgeCollapse(unsigned int v0, unsigned int v1) {
 		return;
 	}
 
-	EdgeCollapse(itr->second);
+	EdgeCollapse(&(itr->second));
 }
 
 void ProgMesh::GenerateIndicesFromFaces() {
@@ -268,17 +276,17 @@ void ProgMesh::GenerateIndicesFromFaces() {
 	mIndices.reserve(mFaces.size() * 3);
     // Order doesn't matter for indices.
 	for(auto faceItr = mFaces.begin(); faceItr != mFaces.end(); faceItr++) {
-		mIndices.push_back(std::find(mVertices.begin(), mVertices.end(), *((*faceItr)->GetVertex(0))) - mVertices.begin());
-		mIndices.push_back(std::find(mVertices.begin(), mVertices.end(), *((*faceItr)->GetVertex(1))) - mVertices.begin());
-		mIndices.push_back(std::find(mVertices.begin(), mVertices.end(), *((*faceItr)->GetVertex(2))) - mVertices.begin());
+		mIndices.push_back(std::find(mVertices.begin(), mVertices.end(), (*faceItr)->GetVertex(0)) - mVertices.begin());
+		mIndices.push_back(std::find(mVertices.begin(), mVertices.end(), (*faceItr)->GetVertex(1)) - mVertices.begin());
+		mIndices.push_back(std::find(mVertices.begin(), mVertices.end(), (*faceItr)->GetVertex(2)) - mVertices.begin());
 	}
 }
 
 void ProgMesh::GenerateNormals() {
 #pragma omp parallel for
     for (int i = 0; i < mVertices.size(); i++) {
-        Vertex & vert = mVertices.at(i);
-        auto adjFaces = GetAdjacentFaces(&vert);
+        Vertex *& vert = mVertices.at(i);
+        auto adjFaces = GetAdjacentFaces(vert);
         std::vector<float> faceAreas;
         faceAreas.reserve(adjFaces.size());
         
@@ -292,14 +300,14 @@ void ProgMesh::GenerateNormals() {
         
         // Sum normals, weighting by area
         for (int j = 0; j < adjFaces.size(); j++) {
-            vert.mNormal += (adjFaces.at(j)->GetNormal() * faceAreas.at(j));
+            vert->mNormal += (adjFaces.at(j)->GetNormal() * faceAreas.at(j));
         }
     }
     
     // Re-normalize all normals
 #pragma omp parallel for
     for (int i = 0; i < mVertices.size(); i++) {
-        mVertices.at(i).mNormal = glm::normalize(mVertices.at(i).mNormal);
+        mVertices.at(i)->mNormal = glm::normalize(mVertices.at(i)->mNormal);
     }
 }
 
@@ -439,7 +447,7 @@ std::vector<Vertex* > ProgMesh::UpdateEdgesAndQuadrics(Vertex * v0, Vertex * v1,
     
 }
 
-void ProgMesh::UpdatePairs(Vertex * v0, Vertex * v1, Vertex & newVertex, std::vector<Vertex* >& neighbors)
+void ProgMesh::UpdatePairs(Vertex * v0, Vertex * v1, Vertex & newVertex, std::vector<Vertex* > neighbors)
 {
 	// Deleting all pairs with v0 and v1 as one of the vertices
 	DeletePairsWithNeighbor(v0, neighbors);
@@ -465,13 +473,13 @@ void ProgMesh::UpdatePairs(Vertex * v0, Vertex * v1, Vertex & newVertex, std::ve
 	if (itr != mEdgeToPair.end()) {
 		mPairs.erase(itr->second);
 		mEdgeToPair.erase(itr);
-	}
+    }
+    
 	itr = mEdgeToPair.find(std::make_pair(v1, v0));
 	if (itr != mEdgeToPair.end()) {
 		mPairs.erase(itr->second);
 		mEdgeToPair.erase(itr);
-	}
-
+    }
 }
 
 /// After all operations for a particular edge collapse have been performed, need to update the GPU buffers

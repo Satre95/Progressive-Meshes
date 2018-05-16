@@ -34,8 +34,6 @@ public:
     /// Returns a list of faces that the given vertex is a part of.
     std::vector<Face *> GetAdjacentFaces(Vertex *) const;
 	glm::mat4 ComputeQuadric(Vertex * aVertex) const;
-	/// Computes initial quadrics and pairs and sorts the latter by smallest error
-	void PreparePairs();
 	void EdgeCollapse(Pair* collapsePair);
 	void TestEdgeCollapse(unsigned int v0, unsigned int v1);
 	void CollapseLeastError();
@@ -44,16 +42,17 @@ public:
     void UpdateBuffers(starforge::RenderDevice & renderDevice);
 private:
 
-
+    /// Computes initial quadrics and pairs and sorts the latter by smallest error
+    void PreparePairsAndQuadrics();
 	void GenerateIndicesFromFaces();
 	void DeletePairsWithNeighbor(Vertex* v, std::vector<Vertex* >& neighbors);
 	void CalculateAndStorePair(Vertex* vA, Vertex * vB);
     void UpdateFaces(Vertex * v0, Vertex * v1, Vertex & newVertex);
 	std::vector<Vertex* > UpdateEdgesAndQuadrics(Vertex * v0, Vertex * v1, Vertex & newVertex);
-	void UpdatePairs(Vertex * v0, Vertex * v1, Vertex & newVertex, std::vector<Vertex* >& neighbors);
+	void UpdatePairs(Vertex * v0, Vertex * v1, Vertex & newVertex, std::vector<Vertex* > neighbors);
     
 	/// The vertices that compose this ProgMesh
-	std::vector<Vertex> mVertices;
+	std::vector<Vertex *> mVertices;
 
 	/// Stores the faces. Faces are indices into the vertex array.
 	//std::vector<Face> mFaces;
@@ -70,11 +69,11 @@ private:
 	std::unordered_map<Vertex *, glm::mat4, VertexPtrHash> mQuadrics;
 
 	/// The pairs ordered by error
-	std::multimap<float,Pair *> mPairs;
+	std::multimap<float,Pair> mPairs;
 
 	// map from two vertices to iterator that points into mPairs
 	// this allows access and updating of mPairs, given the two verticies that make up the pair
-	std::unordered_map<std::pair<Vertex*, Vertex*>, std::multimap<float, Pair *>::iterator> mEdgeToPair;
+	std::unordered_map<std::pair<Vertex*, Vertex*>, std::multimap<float, Pair>::iterator> mEdgeToPair;
 
 	glm::mat4 mModelMatrix;
 

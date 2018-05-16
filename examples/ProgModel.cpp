@@ -58,8 +58,8 @@ void ProgModel::LoadOFF(std::string const & path) {
 #pragma omp parallel for
     for (int i = 0; size_t(i) < mMeshes.size(); ++i) {
         mMeshes.at(i)->BuildConnectivity();
-        mMeshes.at(i)->PreparePairs();
         mMeshes.at(i)->GenerateNormals();
+        mMeshes.at(i)->PreparePairsAndQuadrics();
     }
 }
 
@@ -89,7 +89,7 @@ void ProgModel::LoadProgModel(const std::string &path) {
 #pragma omp parallel for
     for (int i = 0; size_t(i) < mMeshes.size(); ++i) {
         mMeshes.at(i)->BuildConnectivity();
-		mMeshes.at(i)->PreparePairs();
+		mMeshes.at(i)->PreparePairsAndQuadrics();
     }
 }
 
