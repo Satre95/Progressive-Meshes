@@ -36,40 +36,47 @@ struct Vertex {
 	static size_t sCount;
 };
 
+
+inline bool operator==(const Vertex & lhs, const Vertex & rhs)  {
+    return lhs.mId == rhs.mId;
+}
+
 struct Face
 {
     Face(): mId(sCount++) {
-        mIndices[0] = mIndices[1] = mIndices[2] = nullptr;
+        mVertices[0] = mVertices[1] = mVertices[2] = nullptr;
     }
 
     Face(Vertex & v0, Vertex & v1, Vertex & v2): mId(sCount++) {
-        mIndices[0] = &v0; mIndices[1] = &v1; mIndices[2] = & v2;
+        mVertices[0] = &v0; mVertices[1] = &v1; mVertices[2] = & v2;
     }
 
     Face(Vertex * v0, Vertex * v1, Vertex * v2): mId(sCount++) {
-        mIndices[0] = v0; mIndices[1] = v1; mIndices[2] = v2;
+        mVertices[0] = v0; mVertices[1] = v1; mVertices[2] = v2;
     }
 
 
     Face(const Face & other) : mId(other.mId) {
-	    mIndices[0] = other.mIndices[0];
-        mIndices[1] = other.mIndices[1];
-        mIndices[2] = other.mIndices[2];
+	    mVertices[0] = other.mVertices[0];
+        mVertices[1] = other.mVertices[1];
+        mVertices[2] = other.mVertices[2];
 	}
 
-	Vertex * GetVertex(size_t i) const { assert(i < 3); return mIndices[i]; }
+	Vertex * GetVertex(size_t i) const { assert(i < 3); return mVertices[i]; }
 
 	bool ReplaceVertex(Vertex* oldV, Vertex* newV) {
-		for (Vertex* & aVertex : mIndices) {
-			if (aVertex == oldV) {
-				aVertex = newV;
+		for(Vertex* & aVertPtr: mVertices) {
+			if (*oldV == *aVertPtr)		
+			{
+				aVertPtr = newV;
 				return true;
 			}
 		}
+
 		return false;
 	}
 
-	Vertex* mIndices[3];
+	Vertex* mVertices[3];
     const size_t mId;
     static size_t sCount ;
 };
@@ -86,23 +93,17 @@ public:
 	{}
 
 	Pair(const Pair & other):
-	v0(other.v0), v1(other.v1), vOptimal(new Vertex(*other.vOptimal))
+	v0(other.v0), v1(other.v1)
 	{}
 
-	~Pair() {
-		delete vOptimal;
-	}
-
-	Vertex * CalcOptimal() { 
-		vOptimal = new Vertex( ((v0->mPos + v1->mPos)/2.0f),
+	Vertex CalcOptimal() { 
+		return Vertex( ((v0->mPos + v1->mPos)/2.0f),
 						((v0->mNormal + v1->mNormal) / 2.0f), 
 						((v0->mColor + v1->mColor) / 2.0f) ); 
-		return vOptimal;
 	}
 
 	Vertex* v0 = nullptr;
 	Vertex* v1 = nullptr;
-	Vertex* vOptimal = nullptr;
 };
 
 
@@ -148,10 +149,6 @@ struct FacePtrHash {
         return std::hash<Face>{}(*fPtr);
     }
 };
-
-inline bool operator==(const Vertex & lhs, const Vertex & rhs)  {
-    return lhs.mId == rhs.mId;
-}
 
 inline bool operator==(const Face & lhs, const Face & rhs) {
     return lhs.mId == rhs.mId;

@@ -40,6 +40,7 @@ public:
 	void DeletePairsWithNeighbor(Vertex* v);
 	void EdgeCollapse(Pair* collapsePair);
 	void TestEdgeCollapse(unsigned int v0, unsigned int v1);
+	void CollapseLeastError();
 private:
 
 
