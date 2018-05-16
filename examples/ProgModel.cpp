@@ -30,8 +30,8 @@ void ProgModel::LoadProgModel(const std::string &path) {
     // Once all models are loaded, ask them to build their mesh connectivity data structures.
 #pragma omp parallel for
     for (int i = 0; size_t(i) < mMeshes.size(); ++i) {
-        mMeshes.at(i).BuildConnectivity();
-		mMeshes.at(i).PreparePairs();
+        mMeshes.at(i)->BuildConnectivity();
+		//mMeshes.at(i).PreparePairs();
     }
 }
 
@@ -50,7 +50,7 @@ void ProgModel::ProcessNode(aiNode *node, const aiScene *scene) {
 	}
 }
 
-ProgMesh ProgModel::ProcessMesh(aiMesh *mesh, const aiScene *scene) {
+ProgMeshRef ProgModel::ProcessMesh(aiMesh *mesh, const aiScene *scene) {
 	// data to fill
         std::vector<Vertex> vertices;
         vertices.reserve(mesh->mNumVertices);
@@ -90,7 +90,7 @@ ProgMesh ProgModel::ProcessMesh(aiMesh *mesh, const aiScene *scene) {
         
         
         // return a mesh object created from the extracted mesh data
-        return ProgMesh(vertices, indices);
+        return std::make_shared<ProgMesh>(vertices, indices);
 }
 
 void ProgModel::PrintInfo(std::ostream &ostream) {
@@ -99,9 +99,9 @@ void ProgModel::PrintInfo(std::ostream &ostream) {
             << (mMeshes.size() == 1 ? " mesh" : " meshes" ) << std::endl;
     for (size_t i = 0; i < mMeshes.size(); ++i) {
         ostream << '\t';
-        ostream << "Mesh " << i << " contains " << mMeshes.at(i).mVertices.size()
-                << " vertices and " << mMeshes.at(i).mFaces.size() << " faces." << std::endl;
-        mMeshes.at(i).PrintConnectivity(ostream);
+        ostream << "Mesh " << i << " contains " << mMeshes.at(i)->mVertices.size()
+                << " vertices and " << mMeshes.at(i)->mFaces.size() << " faces." << std::endl;
+        mMeshes.at(i)->PrintConnectivity(ostream);
     }
 
 }

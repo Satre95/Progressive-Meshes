@@ -18,7 +18,7 @@ class ProgMesh
 {
 public:
 	ProgMesh() = default;
-	ProgMesh(std::vector<Vertex> & _verts, std::unordered_set<Face> & _faces);
+	//ProgMesh(std::vector<Vertex> & _verts, std::unordered_set<Face> & _faces);
     ProgMesh(std::vector<Vertex> & _verts, std::vector<uint32_t > & _indices);
     ~ProgMesh();
 

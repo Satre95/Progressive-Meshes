@@ -6,21 +6,21 @@
 size_t Vertex::sCount = 0;
 size_t Face::sCount = 0;
 
-ProgMesh::ProgMesh(std::vector<Vertex> & _verts, std::unordered_set<Face> & _faces):
-mVertices(_verts)
-{
-	mFaces.reserve(_faces.size());
-	for (auto faceItr = _faces.begin(); faceItr != _faces.begin(); faceItr++) {
-		mFaces.insert(new Face(*faceItr));
-	}
-
-	GenerateIndicesFromFaces();
-}
+//ProgMesh::ProgMesh(std::vector<Vertex> & _verts, std::unordered_set<Face> & _faces):
+//mVertices(_verts)
+//{
+//	mFaces.reserve(_faces.size());
+//	for (auto faceItr = _faces.begin(); faceItr != _faces.begin(); faceItr++) {
+//		mFaces.insert(new Face(*faceItr));
+//	}
+//
+//	GenerateIndicesFromFaces();
+//}
 
 ProgMesh::ProgMesh(std::vector<Vertex> & _verts, std::vector<uint32_t > & _indices) :
 mVertices(_verts), mIndices(_indices) {
 	for (int i = 0; i < _indices.size(); i+=3) {
-		mFaces.emplace(new Face(mVertices.at(_indices.at(i)), mVertices.at(_indices.at(i+1)), mVertices.at(_indices.at(i+2))));
+		mFaces.insert(new Face(mVertices.at(_indices.at(i)), mVertices.at(_indices.at(i+1)), mVertices.at(_indices.at(i+2))));
 	}
 }
 

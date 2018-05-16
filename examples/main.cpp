@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
     starforge::RenderDevice *renderDevice = starforge::CreateRenderDevice();
 
     // Load the shaders and create the pipeline.
-    std::ifstream vShaderFile("../data/shaders/standard.vert");
+    std::ifstream vShaderFile("data/shaders/standard.vert");
     if(!vShaderFile.good()) {
         std::cerr << "ERROR: Unable to find shader standard.vert" << std::endl;
         return -1;
@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
     std::string vShaderSource(static_cast<std::stringstream const&>(std::stringstream() << vShaderFile.rdbuf()).str());
     starforge::VertexShader * vertexShader = renderDevice->CreateVertexShader(vShaderSource.c_str());
 
-    std::ifstream fShaderFile("../data/shaders/standard.frag");
+    std::ifstream fShaderFile("data/shaders/standard.frag");
     if(!fShaderFile.good()) {
         std::cerr << "ERROR: Unable to find shader standard.frag" << std::endl;
         return -1;
@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
     ProgModelRef aModel = std::make_shared<ProgModel>(std::string(argv[1]));
     aModel->PrintInfo(std::cout);
     for(auto & aMesh: aModel->GetMeshes()) {
-        aMesh.AllocateBuffers(*renderDevice);
+        aMesh->AllocateBuffers(*renderDevice);
     }
 
     renderDevice->SetPipeline(pipeline);
@@ -76,14 +76,14 @@ int main(int argc, char *argv[]) {
         uViewParam->SetAsMat4(glm::value_ptr(view));
         uProjectionParam->SetAsMat4(glm::value_ptr(projection));
 
-        for(auto & aMesh: aModel->GetMeshes()) {
-            auto &modelMat = aMesh.GetModelMatrix();
+        for(ProgMeshRef aMesh: aModel->GetMeshes()) {
+            auto & modelMat = aMesh->GetModelMatrix();
             uModelParam->SetAsMat4(glm::value_ptr(modelMat));
 
             glm::mat3 normMat = glm::mat3(glm::transpose(glm::inverse(modelMat * arcball)));
             uNormalMatParam->SetAsMat3(glm::value_ptr(normMat));
 
-            aMesh.Draw(*renderDevice);
+            aMesh->Draw(*renderDevice);
         }
 
         platform::PresentPlatformWindow(window);

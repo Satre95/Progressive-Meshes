@@ -20,14 +20,14 @@ public:
 	void LoadProgModel(std::string const & path);
 	void PrintInfo(std::ostream & ostream);
 
-	const std::vector<ProgMesh> & GetMeshes() const { return mMeshes; }
-	std::vector<ProgMesh> & GetMeshes() { return mMeshes; }
+	const std::vector<ProgMeshRef> & GetMeshes() const { return mMeshes; }
+	std::vector<ProgMeshRef> & GetMeshes() { return mMeshes; }
 private:
 
 	void ProcessNode(aiNode *node, const aiScene *scene);
-	ProgMesh ProcessMesh(aiMesh *mesh, const aiScene *scene);
-
-	std::vector<ProgMesh> mMeshes;
+	ProgMeshRef ProcessMesh(aiMesh *mesh, const aiScene *scene);
+	
+	std::vector<ProgMeshRef> mMeshes;
 
 	std::string mDirectory;	
 };
