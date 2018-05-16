@@ -19,6 +19,7 @@ size_t Face::sCount = 0;
 
 ProgMesh::ProgMesh(std::vector<Vertex> & _verts, std::vector<uint32_t > & _indices) :
 mVertices(_verts), mIndices(_indices) {
+	mVertices.reserve(mVertices.size() * mVertices.size() - 1);							// TODO: make legit removal
 	for (int i = 0; i < _indices.size(); i+=3) {
 		mFaces.insert(new Face(mVertices.at(_indices.at(i)), mVertices.at(_indices.at(i+1)), mVertices.at(_indices.at(i+2))));
 	}
