@@ -18,6 +18,7 @@ public:
 	ProgModel(std::string const &path);
 
 	void LoadProgModel(std::string const & path);
+	void LoadOFF(std::string const & path);
 	void PrintInfo(std::ostream & ostream);
 
 	const std::vector<ProgMeshRef> & GetMeshes() const { return mMeshes; }

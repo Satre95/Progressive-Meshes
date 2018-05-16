@@ -1,9 +1,65 @@
 #include "ProgModel.hpp"
 
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
 
 ProgModel::ProgModel(const std::string & path) {
-    LoadProgModel(path);
+    // LoadProgModel(path);
+    LoadOFF(path);
+}
+
+
+void ProgModel::LoadOFF(std::string const & path) {
+    std::ifstream file(path);
+    if(!file.good()) {
+        std::cerr << "ERROR: File " << path << " does not exist." << std::endl;  
+    }
+
+    //Read first line to make sure it is OFF
+    std::string offLine;
+    std::getline(file, offLine);
+    if(offLine != "OFF") {
+        std::cerr << "ERROR: File is not and OFF file" << std::endl;
+    }
+
+    // Read number of vertices and faces
+    std::string numVertsAndFaces;
+    std::getline(file, numVertsAndFaces);
+    std::stringstream numBuf(numVertsAndFaces);
+    size_t numVerts, numFaces;
+    numBuf >> numVerts >> numFaces;
+
+    std::vector<Vertex> vertices;
+    for (int i = 0; i < numVerts; ++i) {
+        std::string vertLine;
+        std::getline(file, vertLine);
+        std::stringstream components(vertLine);
+        float x, y, z;
+        components >> x >> y >> z;
+        vertices.emplace_back(glm::vec4(x, y, z, 1.0f));
+    }  
+
+    std::vector<unsigned int> indices;
+    for (int i = 0; i < numFaces; ++i)
+    {
+        std::string indicesLine;
+        std::getline(file, indicesLine);
+        std::stringstream indicesBuf(indicesLine);
+        size_t num, i0, i1, i2;
+        indicesBuf >> num >> i0 >> i1 >> i2;
+        indices.push_back(i0); indices.push_back(i1); indices.push_back(i2);
+    }
+
+    ProgMeshRef mesh = std::make_shared<ProgMesh>(vertices, indices);
+    mMeshes.push_back(mesh);
+    
+#pragma omp parallel for
+    for (int i = 0; size_t(i) < mMeshes.size(); ++i) {
+        mMeshes.at(i)->BuildConnectivity();
+        mMeshes.at(i)->PreparePairs();
+    }
 }
 
 void ProgModel::LoadProgModel(const std::string &path) {
