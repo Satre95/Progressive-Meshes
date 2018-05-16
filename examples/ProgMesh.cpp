@@ -96,17 +96,17 @@ void ProgMesh::BuildConnectivity() {
 	}
 }
 
-void ProgMesh::PrintConnectivity(std::ostream & os) const {
-//    for(const Vertex & aVertex: mVertices) {
-//        auto range = mVertexFaceAdjacency.equal_range(&aVertex);
-//        size_t count = 0;
-//        for(auto it = range.first; it != range.second; ++it) {
-//            auto vert = it->first;
-//            auto face = it->second;
-//            count++;
-//        }
-//        os << "\t\tVertex " << aVertex.mId << " is adjacent to " << count << " faces." << std::endl;
-//    }
+void ProgMesh::PrintConnectivity(std::ostream & os) {
+    //for( Vertex & aVertex: mVertices) {
+    //    auto range = mVertexFaceAdjacency.equal_range(&aVertex);
+    //    size_t count = 0;
+    //    for(auto it = range.first; it != range.second; ++it) {
+    //        auto vert = it->first;
+    //        auto face = it->second;
+    //        count++;
+    //    }
+    //    os << "\t\tVertex " << aVertex.mId << " is adjacent to " << count << " faces." << std::endl;
+    //}
 
 	os << "\t\tThere are " << mEdges.size() << " edges in this mesh." << std::endl;
 }
@@ -331,6 +331,7 @@ void ProgMesh::EdgeCollapse(Pair* collapsePair) {
 		}
 	}
 
+	/*
 	// delete v0 and v1 and update mVertices
 	mVertices.erase(
 		std::remove_if(mVertices.begin(), mVertices.end(), [v0] (Vertex & v) {
@@ -344,13 +345,16 @@ void ProgMesh::EdgeCollapse(Pair* collapsePair) {
 		}),
 		mVertices.end()
 		);
-	// Insert replacement vertex vNew into master array
-	// mVertices.emplace_back((*vNew));
+	*/
+
+	GenerateIndicesFromFaces();
+
 }
 
 void ProgMesh::CollapseLeastError() {
 
 	auto itr = mPairs.begin();
+	std::cout << "Collapsing pair: " << itr->second->v0 << ", " << itr->second->v1 << std::endl;
 	EdgeCollapse(itr->second);
 }
 

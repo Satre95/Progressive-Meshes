@@ -10,11 +10,12 @@ void ProgModel::LoadProgModel(const std::string &path) {
     // read file via ASSIMP
     Assimp::Importer importer;
     const aiScene *scene = importer.ReadFile(path,
-                                             aiProcess_Triangulate
-                                             | aiProcess_OptimizeMeshes
-                                             | aiProcess_OptimizeGraph
-                                             | aiProcess_ImproveCacheLocality
-                                             | aiProcess_GenNormals);
+                                             //aiProcess_Triangulate
+                                             //| aiProcess_OptimizeMeshes
+                                             //| aiProcess_OptimizeGraph
+                                             //| aiProcess_ImproveCacheLocality
+                                              aiProcess_GenNormals
+											  | aiProcess_JoinIdenticalVertices);
 
     // check for errors
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
@@ -31,7 +32,7 @@ void ProgModel::LoadProgModel(const std::string &path) {
 #pragma omp parallel for
     for (int i = 0; size_t(i) < mMeshes.size(); ++i) {
         mMeshes.at(i)->BuildConnectivity();
-		//mMeshes.at(i).PreparePairs();
+		mMeshes.at(i)->PreparePairs();
     }
 }
 

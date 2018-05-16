@@ -105,4 +105,14 @@ int main(int argc, char *argv[]) {
 
 static void keyboard_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
 
+	if (key == GLFW_KEY_EQUAL && action == GLFW_PRESS) {
+
+		for (auto aMesh : aModel->GetMeshes()) {
+
+			aMesh->CollapseLeastError();
+
+		}
+
+	}
+
 }
