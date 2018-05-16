@@ -177,15 +177,6 @@ void ProgMesh::PreparePairs() {
 	}
 }
 
-void ProgMesh::ConnectedVerticesUpdate(Vertex* updateV, Vertex* vOld, Vertex* vNew) {
-
-	std::vector<Vertex* > neighbors = GetConnectedVertices(updateV);
-
-	for (Vertex* & aVertex : neighbors) {
-		if (aVertex == vOld) aVertex = vNew;
-	}
-}
-
 void ProgMesh::DeletePairsWithNeighbor(Vertex* v) {
 
 	std::vector<Vertex* > neighbors = GetConnectedVertices(v);
@@ -206,124 +197,30 @@ void ProgMesh::DeletePairsWithNeighbor(Vertex* v) {
 
 // need to update mVector, mFaces, mVertexFaceAdjacency, mEdges, mQuadrics
 void ProgMesh::EdgeCollapse(Pair* collapsePair) {
-	const Vertex vNewLocal = collapsePair->CalcOptimal();
+    const Vertex vNewLocal = collapsePair->CalcOptimal();
+    
+    Vertex* v0 = collapsePair->v0;
+    Vertex* v1 = collapsePair->v1;
+    
+    // Insert replacement vertex vNew into master array
+    mVertices.push_back(vNewLocal);
+    Vertex & vNew = mVertices.back();
+    
+    // 1. Update Faces ( Create new faces, remove degenerates)
+    UpdateFaces(v0, v1, vNew);
+    
+    // 2. Update Edges (Create new edges, delete degenerates)
+    UpdateEdges(v0, v1, vNew);
 
-	Vertex* v0 = collapsePair->v0;
-	Vertex* v1 = collapsePair->v1;
-	Vertex* vNeighbor = nullptr;
-	bool sharedFace;
-
-	// Insert replacement vertex vNew into master array
-	mVertices.push_back(vNewLocal);
-	Vertex & vNew = mVertices.back();
-
-	// make adjacency of newV the union of v0 and v1 adjacency lists (w/o duplicates)
-	std::vector<Face*> v0Faces = GetAdjacentFaces(v0);
-	std::vector<Face*> v1Faces = GetAdjacentFaces(v1);
-    
-    //Figure out which faces will become degenerate post-collapse.
-    std::sort(v0Faces.begin(), v0Faces.end());
-    std::sort(v1Faces.begin(), v1Faces.end());
-    std::vector<Face*> degenFaces;
-    std::set_intersection(v0Faces.begin(), v0Faces.end(), v1Faces.begin(), v1Faces.end(), std::back_inserter(degenFaces));
-    
-    // Now remove degenerate faces from local v0 and v1 lists
-    v0Faces.erase(std::remove_if(v0Faces.begin(), v0Faces.end(), [degenFaces] (Face *& f) {
-        for(auto & aDegenFace: degenFaces)
-            if (*f == *aDegenFace)
-                return true;
-        return false;
-    }), v0Faces.end());
-    v1Faces.erase(std::remove_if(v1Faces.begin(), v1Faces.end(), [degenFaces] (Face *& f) {
-        for(auto & aDegenFace: degenFaces)
-            if (*f == *aDegenFace)
-                return true;
-        return false;
-    }), v1Faces.end());
-    
-    // Now, for each degenerate face, remove it from its vertex to face adjacencies
-    // In doing so, each degen face is removed for v0 and v1 in master arrays
-    for(auto *& aDegenFace: degenFaces) {
-        for (size_t i = 0; i < 3; i++) {
-            auto range = mVertexFaceAdjacency.equal_range(aDegenFace->GetVertex(i));
-            for (auto it = range.first; it != range.second;) {
-                if (*(it->second) == (*aDegenFace)) {
-                    mVertexFaceAdjacency.erase(it);
-                    break;
-                } else it++;
-            }
-        }
-    }
-    
-    // Now, delete degen faces from master faces list
-    for(auto *& aDegenFace: degenFaces) {
-        mFaces.erase(aDegenFace);
-        delete aDegenFace; aDegenFace = nullptr;
-    }
-    degenFaces.clear(); // Sanity
-    
-    // Now, iterate over the remainining non-degen faces adj to v0 and v1 and assign new vertex
-    for(auto *& v0Face: v0Faces) {
-        // Make a copy
-        Face faceCopy(*v0Face);
-        faceCopy.ReplaceVertex(v0, &vNew);
-        Utilities::ReplaceObject(v0Face, faceCopy);
-        
-        mVertexFaceAdjacency.insert(std::make_pair(&vNew, v0Face));
-    }
-    for(auto *& v1Face: v1Faces) {
-        // Make a copy
-        Face faceCopy(*v1Face);
-        faceCopy.ReplaceVertex(v1, &vNew);
-        Utilities::ReplaceObject(v1Face, faceCopy);
-        
-        mVertexFaceAdjacency.insert(std::make_pair(&vNew, v1Face));
-    }
-    
-    // At this point, all degenerate faces have been removed, a new vertex has been created,
-    // and the mVertexFaceAdjacency has been updated to reflect the removals and creation of new vertex and faces.
-
-	// update mEdges
-	std::vector<Vertex*> v0Vertex = GetConnectedVertices(v0);
-	std::vector<Vertex*> v1Vertex = GetConnectedVertices(v1);
 
 	// remove pairs with soon to be outdated errors
-	for (Vertex* & aVertex : v0Vertex) {
-		DeletePairsWithNeighbor(aVertex);
-	}
-	for (Vertex* & aVertex : v1Vertex) {
-		DeletePairsWithNeighbor(aVertex);
-	}
+//    for (Vertex* & aVertex : v0Vertex) {
+//        DeletePairsWithNeighbor(aVertex);
+//    }
+//    for (Vertex* & aVertex : v1Vertex) {
+//        DeletePairsWithNeighbor(aVertex);
+//    }
 
-	std::vector<Vertex*> alreadyInsertedV;
-	bool sharedVertex;
-
-	for (Vertex* & aVertex : v0Vertex) {
-		if (aVertex == v1) continue;
-		mEdges.insert(std::make_pair(&vNew, aVertex));
-		alreadyInsertedV.push_back(aVertex);
-		ConnectedVerticesUpdate(aVertex, v0, &vNew);
-	}
-	for (Vertex* & aVertex : v1Vertex) {
-		if (aVertex == v0) continue;
-		sharedVertex = false;
-		for (Vertex* & insertedVertex : alreadyInsertedV) {
-			if (insertedVertex == aVertex) {					//found a degenerate edge
-				// remove degenerate edge
-				auto range = mEdges.equal_range(insertedVertex);
-				for (auto it = range.first; it != range.second; ++it) {
-					if (it->second == v1) {
-						mEdges.erase(it);
-					}
-				}
-				sharedVertex = true;
-			}
-		}
-		if (!sharedVertex) {
-			mEdges.insert(std::make_pair(&vNew, aVertex));
-			ConnectedVerticesUpdate(aVertex, v1, &vNew);
-		}
-	}
 
 	// update mQuadrics
 	std::vector<Vertex* > surroundingVertices = GetConnectedVertices(&vNew);
@@ -352,22 +249,6 @@ void ProgMesh::EdgeCollapse(Pair* collapsePair) {
 			mEdgeToPair.insert(std::make_pair(std::make_pair(aVertex, aNeighbor), itr));
 		}
 	}
-
-	/*
-	// delete v0 and v1 and update mVertices
-	mVertices.erase(
-		std::remove_if(mVertices.begin(), mVertices.end(), [v0] (Vertex & v) {
-			return v == (*v0);
-		}),
-		mVertices.end()
-		);
-	mVertices.erase(
-		std::remove_if(mVertices.begin(), mVertices.end(), [v1] (Vertex & v) {
-			return v == (*v1);
-		}),
-		mVertices.end()
-		);
-	*/
 
 	GenerateIndicesFromFaces();
 
@@ -438,3 +319,121 @@ void ProgMesh::GenerateNormals() {
         mVertices.at(i).mNormal = glm::normalize(mVertices.at(i).mNormal);
     }
 }
+
+void ProgMesh::UpdateFaces(Vertex * v0, Vertex * v1, Vertex & vNew) {
+    // make adjacency of newV the union of v0 and v1 adjacency lists (w/o duplicates)
+    std::vector<Face*> v0Faces = GetAdjacentFaces(v0);
+    std::vector<Face*> v1Faces = GetAdjacentFaces(v1);
+    
+    //Figure out which faces will become degenerate post-collapse.
+    std::sort(v0Faces.begin(), v0Faces.end());
+    std::sort(v1Faces.begin(), v1Faces.end());
+    std::vector<Face*> degenFaces;
+    std::set_intersection(v0Faces.begin(), v0Faces.end(), v1Faces.begin(), v1Faces.end(), std::back_inserter(degenFaces));
+    
+    // Now remove degenerate faces from local v0 and v1 lists
+    v0Faces.erase(std::remove_if(v0Faces.begin(), v0Faces.end(), [degenFaces] (Face *& f) {
+        for(auto & aDegenFace: degenFaces)
+            if (*f == *aDegenFace)
+                return true;
+        return false;
+    }), v0Faces.end());
+    v1Faces.erase(std::remove_if(v1Faces.begin(), v1Faces.end(), [degenFaces] (Face *& f) {
+        for(auto & aDegenFace: degenFaces)
+            if (*f == *aDegenFace)
+                return true;
+        return false;
+    }), v1Faces.end());
+    
+    // Now, for each degenerate face, remove it from its vertex to face adjacencies
+    // In doing so, each degen face is removed for v0 and v1 in master arrays
+    for(auto *& aDegenFace: degenFaces) {
+        for (size_t i = 0; i < 3; i++) {
+            auto range = mVertexFaceAdjacency.equal_range(aDegenFace->GetVertex(i));
+            for (auto it = range.first; it != range.second;) {
+                if (*(it->second) == (*aDegenFace)) {
+                    mVertexFaceAdjacency.erase(it);
+                    break;
+                } else it++;
+            }
+        }
+    }
+    
+    // Now, delete degen faces from master faces list
+    for(auto *& aDegenFace: degenFaces) {
+        mFaces.erase(aDegenFace);
+        delete aDegenFace; aDegenFace = nullptr;
+    }
+    degenFaces.clear(); // Sanity
+    
+    // Now, iterate over the remainining non-degen faces adj to v0 and v1 and assign new vertex
+    for(auto *& v0Face: v0Faces) {
+        // Make a copy
+        Face faceCopy(*v0Face);
+        faceCopy.ReplaceVertex(v0, &vNew);
+        Utilities::ReplaceObject(v0Face, faceCopy);
+        
+        mVertexFaceAdjacency.insert(std::make_pair(&vNew, v0Face));
+    }
+    for(auto *& v1Face: v1Faces) {
+        // Make a copy
+        Face faceCopy(*v1Face);
+        faceCopy.ReplaceVertex(v1, &vNew);
+        Utilities::ReplaceObject(v1Face, faceCopy);
+        
+        mVertexFaceAdjacency.insert(std::make_pair(&vNew, v1Face));
+    }
+    
+    // At this point, all degenerate faces have been removed, a new vertex has been created,
+    // and the mVertexFaceAdjacency has been updated to reflect the removals and creation of new vertex and faces.
+}
+
+void ProgMesh::UpdateEdges(Vertex * v0, Vertex * v1, Vertex & newVertex) {
+    auto v0Neighbors = GetConnectedVertices(v0);
+    auto v1Neighbors = GetConnectedVertices(v1);
+    std::sort(v0Neighbors.begin(), v0Neighbors.end());
+    std::sort(v1Neighbors.begin(), v1Neighbors.end());
+    // Make a union, so there is just one array we have to deal with
+    std::vector<Vertex*> allNeighbors;
+    std::set_union(v0Neighbors.begin(), v0Neighbors.end(), v1Neighbors.begin(), v1Neighbors.end(), std::back_inserter(allNeighbors));
+    
+    // 'Edges' are really directed edges between two vertices
+    // Remove all the incoming edges into v0 v1 from their neighbors.
+    for(auto *& aNeighbor: allNeighbors) {
+        auto range = mEdges.equal_range(aNeighbor);
+        for(auto it = range.first; it != range.second;) {
+            if (it->second == v0) {
+                mEdges.erase(it);
+                break;
+            } else it++;
+        }
+    }
+    for(auto *& aNeighbor: allNeighbors) {
+        auto range = mEdges.equal_range(aNeighbor);
+        for(auto it = range.first; it != range.second;) {
+            if (it->second == v1) {
+                mEdges.erase(it);
+                break;
+            } else it++;
+        }
+    }
+    
+    // Now remove outgoing edges of v0 and v1
+    mEdges.erase(v0);
+    mEdges.erase(v1);
+    
+    // Now create new edges for the vNew
+    // First remove v0 and v1 from the allNeighbors array
+    allNeighbors.erase(std::remove_if(allNeighbors.begin(), allNeighbors.end(), [v0, v1] (Vertex *& v) {
+        return ((*v) == (*v0)) || ((*v) == (*v1));
+    }), allNeighbors.end());
+    for(auto & aNeighbor: allNeighbors) {
+        // Create inbound edge to vNew
+        mEdges.insert(std::make_pair(aNeighbor, &newVertex));
+        // Create outbound edge from vNew to neighbor
+        mEdges.insert(std::make_pair(&newVertex, aNeighbor));
+    }
+    
+    // Done updating edges.
+}
+
