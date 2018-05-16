@@ -226,7 +226,7 @@ void ProgMesh::EdgeCollapse(Pair* collapsePair) {
     UpdateFaces(v0, v1, vNew);
     
     // 2. Update Edges (Create new edges, delete degenerates)
-	std::vector<Vertex* >& neighbors = UpdateEdgesAndQuadrics(v0, v1, vNew);
+	std::vector<Vertex* > neighbors = UpdateEdgesAndQuadrics(v0, v1, vNew);
 
 	// 3. Update Pairs
 	UpdatePairs(v0, v1, vNew, neighbors);
@@ -370,7 +370,7 @@ void ProgMesh::UpdateFaces(Vertex * v0, Vertex * v1, Vertex & vNew) {
     // and the mVertexFaceAdjacency has been updated to reflect the removals and creation of new vertex and faces.
 }
 
-std::vector<Vertex* >& ProgMesh::UpdateEdgesAndQuadrics(Vertex * v0, Vertex * v1, Vertex & newVertex) {
+std::vector<Vertex* > ProgMesh::UpdateEdgesAndQuadrics(Vertex * v0, Vertex * v1, Vertex & newVertex) {
     auto v0Neighbors = GetConnectedVertices(v0);
     auto v1Neighbors = GetConnectedVertices(v1);
     std::sort(v0Neighbors.begin(), v0Neighbors.end());

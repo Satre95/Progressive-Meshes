@@ -48,7 +48,7 @@ private:
 	void DeletePairsWithNeighbor(Vertex* v, std::vector<Vertex* >& neighbors);
 	void CalculateAndStorePair(Vertex* vA, Vertex * vB);
     void UpdateFaces(Vertex * v0, Vertex * v1, Vertex & newVertex);
-	std::vector<Vertex* >& UpdateEdgesAndQuadrics(Vertex * v0, Vertex * v1, Vertex & newVertex);
+	std::vector<Vertex* > UpdateEdgesAndQuadrics(Vertex * v0, Vertex * v1, Vertex & newVertex);
 	void UpdatePairs(Vertex * v0, Vertex * v1, Vertex & newVertex, std::vector<Vertex* >& neighbors);
     
 	/// The vertices that compose this ProgMesh
