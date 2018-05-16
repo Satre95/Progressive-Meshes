@@ -108,7 +108,7 @@ void ProgMesh::PrintConnectivity(std::ostream & os) {
     //    os << "\t\tVertex " << aVertex.mId << " is adjacent to " << count << " faces." << std::endl;
     //}
 
-	os << "\t\tThere are " << mEdges.size() << " edges in this mesh." << std::endl;
+	os << "\t\tThere are " << mEdges.size() / 2.f << " edges in this mesh." << std::endl;
 }
 
 std::vector<Vertex *> ProgMesh::GetConnectedVertices(Vertex * aVertex) const {
@@ -235,18 +235,21 @@ void ProgMesh::EdgeCollapse(Pair* collapsePair) {
 	for (Face* & aFace : v1Faces) {
 		sharedFace = false;
 		for (Face* & insertedFace : alreadyInsertedF) {
-		if (insertedFace == aFace) {					// found a degenerate face
+		if ((*insertedFace) == (*aFace)) {					// found a degenerate face
 
 			// remove this face from vertex to face adjacency
 			for (unsigned int i = 0; i < 3; i++) {
 				if (aFace->GetVertex(i) != v0 && aFace->GetVertex(i) != v1) vNeighbor = aFace->GetVertex(i);
 			}
-			auto range = mVertexFaceAdjacency.equal_range(vNeighbor);
-			for (auto it = range.first; it != range.second; ++it) {
-				if (it->second == insertedFace) {
-					mVertexFaceAdjacency.erase(it);
-				}
-			}
+            
+            auto range = mVertexFaceAdjacency.equal_range(vNeighbor);
+            for (auto it = range.first; it != range.second;) {
+                if (*(it->second) == (*insertedFace)) {
+                    mVertexFaceAdjacency.erase(it);
+                }
+                else
+                    ++it;
+            }
 			sharedFace = true;
 
 			mFaces.erase(aFace);
@@ -388,6 +391,34 @@ void ProgMesh::GenerateIndicesFromFaces() {
 }
 
 void ProgMesh::GenerateNormals() {
+#pragma omp parallel for
+    for (int i = 0; i < mVertices.size(); i++) {
+        Vertex & vert = mVertices.at(i);
+        auto adjFaces = GetAdjacentFaces(&vert);
+        std::vector<float> faceAreas;
+        faceAreas.reserve(adjFaces.size());
+        
+        for (int j = 0; j < adjFaces.size(); j++) {
+            faceAreas.push_back(adjFaces.at(j)->GetArea());
+        }
+        // Find the largest area
+        float maxArea = *std::max_element(faceAreas.begin(), faceAreas.end());
+        // Normalize all areas to 0 ... 1.
+        for(float & anArea: faceAreas) anArea /= maxArea;
+        
+        // Sum normals, weighting by area
+        for (int j = 0; j < adjFaces.size(); j++) {
+            vert.mNormal += (adjFaces.at(j)->GetNormal() * faceAreas.at(j));
+        }
+    }
+    
+    // Re-normalize all normals
+#pragma omp parallel for
+    for (int i = 0; i < mVertices.size(); i++) {
+        mVertices.at(i).mNormal = glm::normalize(mVertices.at(i).mNormal);
+    }
+    /*
+    
 	// Sum up normals
 	for(auto & facePtr: mFaces) {
 		auto normal = facePtr->GetNormal();
@@ -404,4 +435,5 @@ void ProgMesh::GenerateNormals() {
 	for(Vertex & aVertex: mVertices) {
 		aVertex.mNormal = glm::normalize(aVertex.mNormal);
 	}
+     */
 }

@@ -58,6 +58,7 @@ FragVertColor = aColor;
 	//--------------------------------------------------------------------
 #ifdef __APPLE__
 	const char * g_defaultPixelShaderSource = R"END(
+#version 410 core
 struct DirectLight
 {
 	vec3 direction;

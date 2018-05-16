@@ -46,10 +46,9 @@ void main()
 
 		FragColor = vec4((ambient1 + ambient2 + diffuse1 + diffuse2) * FragVertColor.xyz, 1.f);
 		FragColor.a = FragVertColor.a;
+		//FragColor.xyz = FragNormal;
 	}
 	else {
 		FragColor = FragVertColor;
 	}
-
-//	FragColor = vec4(FragNormal, 1.f);
 }

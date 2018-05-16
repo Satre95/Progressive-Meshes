@@ -82,6 +82,13 @@ struct Face
 
         return glm::vec4(glm::normalize(glm::cross(a, b)), 0.f);
     }
+    
+    float GetArea() const {
+        auto a = glm::vec3(mVertices[1]->mPos - mVertices[0]->mPos);
+        auto b = glm::vec3(mVertices[2]->mPos - mVertices[0]->mPos);
+        
+        return glm::length(glm::cross(a, b)) * 0.5f;
+    }
 
 	Vertex* mVertices[3];
     const size_t mId;
