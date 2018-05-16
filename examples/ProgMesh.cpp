@@ -495,6 +495,19 @@ void ProgMesh::UpdatePairs(Vertex * v0, Vertex * v1, Vertex & newVertex, std::ve
     if (itr != mEdgeToPair.end()) {
         std::cout << "SMH" << std::endl;
     }
+    
+    for (auto & aPair : mPairs) {
+//        if (*aPair.second.v0 == *v0 || *aPair.second.v1 == *v0) {
+//            std::cout << "ERROR: found v0 again" << std::endl;
+//        }
+//        if (*aPair.second.v0 == *v1 || *aPair.second.v1 == *v1) {
+//            std::cout << "ERROR: found v1 again" << std::endl;
+//        }
+        
+        if( (*aPair.second.v0 == *v0 || *aPair.second.v1 == *v0) && (*aPair.second.v0 == *v1 || *aPair.second.v1 == *v1)) {
+            std::cout << "ERROR: Found v0 and v1 pair in mPairs after it should have been removed" << std::endl;
+        }
+    }
 }
 
 /// After all operations for a particular edge collapse have been performed, need to update the GPU buffers
