@@ -386,3 +386,22 @@ void ProgMesh::GenerateIndicesFromFaces() {
 		mIndices.push_back(std::find(mVertices.begin(), mVertices.end(), *((*faceItr)->GetVertex(2))) - mVertices.begin());
 	}
 }
+
+void ProgMesh::GenerateNormals() {
+	// Sum up normals
+	for(auto & facePtr: mFaces) {
+		auto normal = facePtr->GetNormal();
+		Vertex & v0 = mVertices.at(std::find(mVertices.begin(), mVertices.end(), *(facePtr->GetVertex(0))) - mVertices.begin());
+		Vertex & v1 = mVertices.at(std::find(mVertices.begin(), mVertices.end(), *(facePtr->GetVertex(1))) - mVertices.begin());
+		Vertex & v2 = mVertices.at(std::find(mVertices.begin(), mVertices.end(), *(facePtr->GetVertex(2))) - mVertices.begin());
+
+		v0.mNormal += normal;
+		v1.mNormal += normal;
+		v2.mNormal += normal;
+	}
+
+	// Normalize the normals :)
+	for(Vertex & aVertex: mVertices) {
+		aVertex.mNormal = glm::normalize(aVertex.mNormal);
+	}
+}

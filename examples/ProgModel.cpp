@@ -54,9 +54,10 @@ void ProgModel::LoadOFF(std::string const & path) {
 
     ProgMeshRef mesh = std::make_shared<ProgMesh>(vertices, indices);
     mMeshes.push_back(mesh);
-    
+
 #pragma omp parallel for
     for (int i = 0; size_t(i) < mMeshes.size(); ++i) {
+        mMeshes.at(i)->GenerateNormals();
         mMeshes.at(i)->BuildConnectivity();
         mMeshes.at(i)->PreparePairs();
     }

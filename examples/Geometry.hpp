@@ -76,6 +76,13 @@ struct Face
 		return false;
 	}
 
+    glm::vec4 GetNormal() const {
+        auto a = glm::vec3(mVertices[1]->mPos - mVertices[0]->mPos);
+        auto b = glm::vec3(mVertices[2]->mPos - mVertices[0]->mPos);
+
+        return glm::vec4(glm::normalize(glm::cross(a, b)), 0.f);
+    }
+
 	Vertex* mVertices[3];
     const size_t mId;
     static size_t sCount ;
