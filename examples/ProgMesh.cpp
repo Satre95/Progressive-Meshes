@@ -257,7 +257,7 @@ void ProgMesh::CollapseLeastError() {
 	auto itr = mPairs.begin();
 	std::cout << "Collapsing pair: " << itr->second.v0 << ", " << itr->second.v1 << std::endl;
 	EdgeCollapse(&(itr->second));
-	PrintConnectivity(std::cout);
+	//PrintConnectivity(std::cout);
 }
 
 // just used for testing specific collapses

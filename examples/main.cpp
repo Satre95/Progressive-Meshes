@@ -134,8 +134,11 @@ static void keyboard_callback(GLFWwindow* window, int key, int scancode, int act
 
 		for (auto aMesh : aModel->GetMeshes()) {
 
-			aMesh->CollapseLeastError();
-            aMesh->UpdateBuffers(*renderDevice);
+			unsigned int numCollapses = 100;
+			for (unsigned int i = 0; i < numCollapses; i++) {
+				aMesh->CollapseLeastError();
+				aMesh->UpdateBuffers(*renderDevice);
+			}
 
 		}
 
