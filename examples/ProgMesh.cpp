@@ -187,6 +187,25 @@ void ProgMesh::PreparePairsAndQuadrics() {
 	}
 }
 
+void ProgMesh::PreparePairs() {
+	for (Vertex *& aVertex : mVertices) {
+
+		// Compute error for each pair and order them
+		auto neighbors = GetConnectedVertices(aVertex);
+		for (Vertex* & aNeighbor : neighbors) {
+			Pair newPair(aVertex, aNeighbor);
+
+			// only midpoint TODO - can definetly make this the legit optimal w/o too much trouble
+			Vertex vOptimal = newPair.CalcOptimal();
+			float error = glm::dot(vOptimal.mPos,
+				(mQuadrics[aVertex] + mQuadrics[aNeighbor]) * vOptimal.mPos);
+
+			auto itr = mPairs.insert(std::make_pair(error, newPair));
+			mEdgeToPair.insert(std::make_pair(std::make_pair(aVertex, aNeighbor), itr));
+		}
+	}
+}
+
 void ProgMesh::DeletePairsWithNeighbor(Vertex* v, std::vector<Vertex* > neighbors) {
 
 	for (Vertex* & aNeighbor : neighbors) {
@@ -495,7 +514,7 @@ void ProgMesh::UpdatePairs(Vertex * v0, Vertex * v1, Vertex & newVertex, std::ve
     mPairs.clear();
     mEdgeToPair.clear();
 
-    PreparePairsAndQuadrics();
+    PreparePairs();
 //    for (auto & aPair : mPairs) {
 //        if( (*aPair.second.v0 == *v0 || *aPair.second.v1 == *v0) && (*aPair.second.v0 == *v1 || *aPair.second.v1 == *v1)) {
 //            std::cout << "ERROR: Found v0 and v1 pair in mPairs after it should have been removed" << std::endl;

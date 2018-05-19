@@ -46,6 +46,7 @@ private:
 
     /// Computes initial quadrics and pairs and sorts the latter by smallest error
     void PreparePairsAndQuadrics();
+	void PreparePairs();
 	void GenerateIndicesFromFaces();
 	void DeletePairsWithNeighbor(Vertex* v, std::vector<Vertex* > neighbors);
 	void CalculateAndStorePair(Vertex* vA, Vertex * vB);
