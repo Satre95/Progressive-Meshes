@@ -13,7 +13,7 @@ set(SOURCE_FILES
     main.cpp
     ProgModel.cpp
     ProgMesh.cpp
-    Decimation.cpp)
+    )
 set(HEADER_FILES
     ProgModel.hpp
     ProgMesh.hpp

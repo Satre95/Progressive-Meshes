@@ -408,17 +408,25 @@ std::vector<Vertex* > ProgMesh::UpdateEdgesAndQuadrics(Vertex * v0, Vertex * v1,
     std::sort(v1Neighbors.begin(), v1Neighbors.end());
     // Make a union, so there is just one array we have to deal with
     std::vector<Vertex*> allNeighbors;
+    allNeighbors.reserve(v0Neighbors.size() + v1Neighbors.size() - 2);
     std::set_union(v0Neighbors.begin(), v0Neighbors.end(), v1Neighbors.begin(), v1Neighbors.end(), std::back_inserter(allNeighbors));
     
+    /// Fance-shmancy way to remove v0 and v1 from v1Neighbors and v0Neighbors respectfully
+    std::vector<Vertex *> decV0Neighbors; std::vector<Vertex*> v0Vec; v0Vec.push_back(v0);
+    std::vector<Vertex *> decV1Neighbors; std::vector<Vertex*> v1Vec; v1Vec.push_back(v1);
+    std::set_difference(v0Neighbors.begin(), v0Neighbors.end(), v1Vec.begin(), v1Vec.end(), std::inserter(decV0Neighbors, decV0Neighbors.begin()));
+    std::set_difference(v1Neighbors.begin(), v1Neighbors.end(), v0Vec.begin(), v0Vec.end(), std::inserter(decV1Neighbors, decV1Neighbors.begin()));
+    dec.v0Neighbors = decV0Neighbors; // We bougie up in this bitch
+    dec.v1Neighbors = decV1Neighbors;
+    
     // 'Edges' are really directed edges between two vertices
-    // Remove all the incoming edges into v0 v1 from their neighbors.
+    // Remove all the incoming edges into v0 & v1 from their neighbors.
     for(auto *& aNeighbor: allNeighbors) {
-
 		//pairs
         auto range = mEdges.equal_range(aNeighbor);
         for(auto it = range.first; it != range.second;) {
             if (it->second == v0) {
-                mEdges.erase(it);
+                it = mEdges.erase(it);
                 break;
             } else it++;
         }
@@ -427,7 +435,7 @@ std::vector<Vertex* > ProgMesh::UpdateEdgesAndQuadrics(Vertex * v0, Vertex * v1,
         auto range = mEdges.equal_range(aNeighbor);
         for(auto it = range.first; it != range.second;) {
             if (it->second == v1) {
-                mEdges.erase(it);
+                it = mEdges.erase(it);
                 break;
             } else it++;
         }
@@ -442,6 +450,7 @@ std::vector<Vertex* > ProgMesh::UpdateEdgesAndQuadrics(Vertex * v0, Vertex * v1,
     allNeighbors.erase(std::remove_if(allNeighbors.begin(), allNeighbors.end(), [v0, v1] (Vertex *& v) {
         return ((*v) == (*v0)) || ((*v) == (*v1));
     }), allNeighbors.end());
+    
     for(auto & aNeighbor: allNeighbors) {
         // Create inbound edge to vNew
         mEdges.insert(std::make_pair(aNeighbor, &newVertex));
@@ -450,10 +459,6 @@ std::vector<Vertex* > ProgMesh::UpdateEdgesAndQuadrics(Vertex * v0, Vertex * v1,
     }
     
     // Done updating edges.
-
-	// remove quadrics for v0 and v1
-	mQuadrics.erase(v0);
-	mQuadrics.erase(v1);
 
 	// update mQuadrics for vertices whose adjacent planes have changed
 	for (auto & aNeighbor : allNeighbors) {
@@ -464,7 +469,6 @@ std::vector<Vertex* > ProgMesh::UpdateEdgesAndQuadrics(Vertex * v0, Vertex * v1,
 	mQuadrics.insert(std::make_pair(&newVertex, ComputeQuadric(&newVertex)));
 
 	return allNeighbors;
-    
 }
 
 void ProgMesh::UpdatePairs(Vertex * v0, Vertex * v1, Vertex & newVertex, std::vector<Vertex* > neighbors, Decimation & dec)
