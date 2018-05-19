@@ -7,9 +7,11 @@
 #include <functional>
 #include <vector>
 #include <iostream>
+#include <stack>
 #include <memory>
 #include "Geometry.hpp"
 #include "RenderDevice.hpp"
+#include "Decimation.hpp"
 
 /**
  * This class represents geometry in space and any associated transformations on that geometry.
@@ -47,11 +49,14 @@ private:
     /// Computes initial quadrics and pairs and sorts the latter by smallest error
     void PreparePairsAndQuadrics();
 	void GenerateIndicesFromFaces();
-	void DeletePairsWithNeighbor(Vertex* v, std::vector<Vertex* > neighbors);
+	void DeletePairsWithNeighbor(Vertex* v, std::vector<Vertex* > neighbors, Decimation & dec);
 	void CalculateAndStorePair(Vertex* vA, Vertex * vB);
-    void UpdateFaces(Vertex * v0, Vertex * v1, Vertex & newVertex);
-	std::vector<Vertex* > UpdateEdgesAndQuadrics(Vertex * v0, Vertex * v1, Vertex & newVertex);
-	void UpdatePairs(Vertex * v0, Vertex * v1, Vertex & newVertex, std::vector<Vertex* > neighbors);
+    void UpdateFaces(Vertex * v0, Vertex * v1, Vertex & newVertex, Decimation & dec);
+	std::vector<Vertex* > UpdateEdgesAndQuadrics(Vertex * v0, Vertex * v1, Vertex & newVertex, Decimation & dec);
+	void UpdatePairs(Vertex * v0, Vertex * v1, Vertex & newVertex, std::vector<Vertex* > neighbors, Decimation & dec);
+    
+    /// The list of decimation operations that have occurred
+    std::stack<Decimation> mDecimations;
     
 	/// The vertices that compose this ProgMesh
 	std::vector<Vertex *> mVertices;

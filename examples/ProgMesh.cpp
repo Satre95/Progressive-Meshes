@@ -187,7 +187,7 @@ void ProgMesh::PreparePairsAndQuadrics() {
 	}
 }
 
-void ProgMesh::DeletePairsWithNeighbor(Vertex* v, std::vector<Vertex* > neighbors) {
+void ProgMesh::DeletePairsWithNeighbor(Vertex* v, std::vector<Vertex* > neighbors, Decimation & dec) {
 
 	for (Vertex* & aNeighbor : neighbors) {
 		auto itr = mEdgeToPair.find(std::make_pair(v, aNeighbor));
@@ -224,31 +224,40 @@ void ProgMesh::CalculateAndStorePair(Vertex* vA, Vertex * vB) {
 // need to update mVector, mFaces, mVertexFaceAdjacency, mEdges, mQuadrics
 void ProgMesh::EdgeCollapse(Pair* collapsePair) {
     Vertex * vNew = new Vertex(collapsePair->CalcOptimal());
-    
     Vertex* v0 = collapsePair->v0;
     Vertex* v1 = collapsePair->v1;
+    Decimation decimation;
+    // Save v0, v1, and vNew in decimation object
+    decimation.vNew = vNew;
+    decimation.v0 = v0;
+    decimation.v1 = v1;
+    
     
     // Insert replacement vertex vNew into master array
     mVertices.push_back(vNew);
     
+    
     // 1. Update Faces ( Create new faces, remove degenerates)
-    UpdateFaces(v0, v1, *vNew);
+    UpdateFaces(v0, v1, *vNew, decimation);
     
     // 2. Update Edges (Create new edges, delete degenerates)
-	std::vector<Vertex* > neighbors = UpdateEdgesAndQuadrics(v0, v1, *vNew);
+	std::vector<Vertex* > neighbors = UpdateEdgesAndQuadrics(v0, v1, *vNew, decimation);
 
-    // 4. Remove v0 and v1 from master vertices array.
+    // 3. Remove v0 and v1 from master vertices array.
+    // TODO: Replace deletion with move to decimation object
     mVertices.erase(std::remove_if(mVertices.begin(), mVertices.end(), [v0, v1] (Vertex *& v) {
         return (*v == *v0) || (*v == *v1);
     }), mVertices.end());
-    delete v0; delete v1;
     v0 = nullptr; v1 = nullptr;
 
-	// 3. Update Pairs
-	UpdatePairs(v0, v1, *vNew, neighbors);
+	// 4. Update Pairs
+	UpdatePairs(v0, v1, *vNew, neighbors, decimation);
 
 	// 5. (Regen indices for rendering)
 	GenerateIndicesFromFaces();
+    
+    // 6. Add decimation to list
+    mDecimations.push(decimation);
 
 }
 
@@ -318,7 +327,7 @@ void ProgMesh::GenerateNormals() {
     }
 }
 
-void ProgMesh::UpdateFaces(Vertex * v0, Vertex * v1, Vertex & vNew) {
+void ProgMesh::UpdateFaces(Vertex * v0, Vertex * v1, Vertex & vNew, Decimation & dec) {
     // make adjacency of newV the union of v0 and v1 adjacency lists (w/o duplicates)
     std::vector<Face*> v0Faces = GetAdjacentFaces(v0);
     std::vector<Face*> v1Faces = GetAdjacentFaces(v1);
@@ -386,7 +395,7 @@ void ProgMesh::UpdateFaces(Vertex * v0, Vertex * v1, Vertex & vNew) {
     // and the mVertexFaceAdjacency has been updated to reflect the removals and creation of new vertex and faces.
 }
 
-std::vector<Vertex* > ProgMesh::UpdateEdgesAndQuadrics(Vertex * v0, Vertex * v1, Vertex & newVertex) {
+std::vector<Vertex* > ProgMesh::UpdateEdgesAndQuadrics(Vertex * v0, Vertex * v1, Vertex & newVertex, Decimation & dec) {
     auto v0Neighbors = GetConnectedVertices(v0);
     auto v1Neighbors = GetConnectedVertices(v1);
     std::sort(v0Neighbors.begin(), v0Neighbors.end());
@@ -452,7 +461,7 @@ std::vector<Vertex* > ProgMesh::UpdateEdgesAndQuadrics(Vertex * v0, Vertex * v1,
     
 }
 
-void ProgMesh::UpdatePairs(Vertex * v0, Vertex * v1, Vertex & newVertex, std::vector<Vertex* > neighbors)
+void ProgMesh::UpdatePairs(Vertex * v0, Vertex * v1, Vertex & newVertex, std::vector<Vertex* > neighbors, Decimation & dec)
 {
     /*
 	// Deleting all pairs with v0 and v1 as one of the vertices
