@@ -352,6 +352,11 @@ void ProgMesh::UpdateFaces(Vertex * v0, Vertex * v1, Vertex & vNew, Decimation &
         return false;
     }), v1Faces.end());
     
+    // Keep track of faces in decimation object
+    dec.v0Faces = v0Faces;
+    dec.v1Faces = v1Faces;
+    dec.degenFaces = degenFaces;
+    
     // Now, for each degenerate face, remove it from its vertex to face adjacencies
     // In doing so, each degen face is removed for v0 and v1 in master arrays
     for(auto *& aDegenFace: degenFaces) {
@@ -369,7 +374,7 @@ void ProgMesh::UpdateFaces(Vertex * v0, Vertex * v1, Vertex & vNew, Decimation &
     // Now, delete degen faces from master faces list
     for(auto *& aDegenFace: degenFaces) {
         mFaces.erase(aDegenFace);
-        delete aDegenFace; aDegenFace = nullptr;
+        aDegenFace = nullptr;
     }
     degenFaces.clear(); // Sanity
     
@@ -393,6 +398,7 @@ void ProgMesh::UpdateFaces(Vertex * v0, Vertex * v1, Vertex & vNew, Decimation &
     
     // At this point, all degenerate faces have been removed, a new vertex has been created,
     // and the mVertexFaceAdjacency has been updated to reflect the removals and creation of new vertex and faces.
+    // The decimation object is now storing the degenerate faces that were removed and other faces that were modified.
 }
 
 std::vector<Vertex* > ProgMesh::UpdateEdgesAndQuadrics(Vertex * v0, Vertex * v1, Vertex & newVertex, Decimation & dec) {
