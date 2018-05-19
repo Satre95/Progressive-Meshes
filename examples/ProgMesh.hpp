@@ -40,6 +40,8 @@ public:
 	void GenerateNormals();
     
     void UpdateBuffers(starforge::RenderDevice & renderDevice);
+
+	bool PrintStatements = false;
 private:
 
     /// Computes initial quadrics and pairs and sorts the latter by smallest error

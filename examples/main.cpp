@@ -144,4 +144,13 @@ static void keyboard_callback(GLFWwindow* window, int key, int scancode, int act
 
 	}
 
+	//toggle print statements
+	if (key == GLFW_KEY_P && action == GLFW_PRESS) {
+
+		for (auto aMesh : aModel->GetMeshes()) {
+			aMesh->PrintStatements = !aMesh->PrintStatements;
+		}
+
+	}
+
 }
