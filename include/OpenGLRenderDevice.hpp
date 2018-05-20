@@ -78,6 +78,11 @@ namespace starforge
 			glBindBuffer(GL_ARRAY_BUFFER, VBO);
 			glBufferData(GL_ARRAY_BUFFER, size, data, GL_DYNAMIC_DRAW); // always assuming dynamic, for now
 		}
+        
+        void FillBuffer(long long size, const void * data) {
+            glBindBuffer(GL_ARRAY_BUFFER, VBO);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, size, data);
+        }
 
 		~OpenGLVertexBuffer() override
 		{
@@ -139,8 +144,13 @@ namespace starforge
 		{
 			glGenBuffers(1, &IBO);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_STATIC_DRAW); // always assuming static, for now
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_DYNAMIC_DRAW); // always assuming static, for now
 		}
+        
+        void FillBuffer(long long size, const void * data) {
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
+            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, size, data);
+        }
 
 		~OpenGLIndexBuffer() override
 		{
@@ -177,6 +187,8 @@ namespace starforge
 		void SetPipeline(Pipeline *pipeline) override;
 
 		VertexBuffer *CreateVertexBuffer(long long size, const void *data = nullptr) override;
+        
+        void FillVertexBuffer(VertexBuffer * vertexBuffer, long long size, const void * data) override;
 
 		void DestroyVertexBuffer(VertexBuffer *vertexBuffer) override;
 
@@ -193,7 +205,9 @@ namespace starforge
 		IndexBuffer *CreateIndexBuffer(long long size, const void *data = nullptr) override;
 
 		void DestroyIndexBuffer(IndexBuffer *indexBuffer) override;
-
+        
+        void FillIndexBuffer(IndexBuffer * vertexBuffer, long long size, const void * data) override;
+        
 		void SetIndexBuffer(IndexBuffer *indexBuffer) override;
 
 		Texture2D *CreateTexture2D(int width, int height, const void *data = nullptr) override;

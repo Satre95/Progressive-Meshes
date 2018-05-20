@@ -121,6 +121,11 @@ namespace starforge {
         m_VBOs.push_back(new OpenGLVertexBuffer(size, data));
         return m_VBOs.back();
     }
+    
+    void OpenGLRenderDevice::FillVertexBuffer(VertexBuffer *vertexBuffer, long long size, const void * data) {
+        auto glBuffer = dynamic_cast<OpenGLVertexBuffer*>(vertexBuffer);
+        glBuffer->FillBuffer(size, data);
+    }
 
     void OpenGLRenderDevice::DestroyVertexBuffer(VertexBuffer *vertexBuffer) {
         if (vertexBuffer) {
@@ -189,6 +194,11 @@ namespace starforge {
             );
             Utilities::Safe_Delete(indexBuffer);
         }
+    }
+    
+    void OpenGLRenderDevice::FillIndexBuffer(IndexBuffer * indexBuffer, long long size, const void * data) {
+        auto glBuffer = dynamic_cast<OpenGLIndexBuffer*>(indexBuffer);
+        glBuffer->FillBuffer(size, data);
     }
 
     void OpenGLRenderDevice::SetIndexBuffer(IndexBuffer *indexBuffer) {

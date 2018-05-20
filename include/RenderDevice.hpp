@@ -309,6 +309,9 @@ public:
     /// Destroy a vertex buffer
     virtual void DestroyVertexBuffer(VertexBuffer *vertexBuffer) = 0;
 
+    /// Fill an existing vertex buffer with new data.
+    virtual void FillVertexBuffer(VertexBuffer * vertexBuffer, long long size, const void * data) = 0;
+    
     /// Create a vertex description given an array of VertexElement structures
     virtual VertexDescription *CreateVertexDescription(unsigned int numVertexElements, const VertexElement *vertexElements) = 0;
 
@@ -330,6 +333,9 @@ public:
     /// Destroy an index buffer
     virtual void DestroyIndexBuffer(IndexBuffer *indexBuffer) = 0;
 
+    /// Fill an existing vertex buffer with new data.
+    virtual void FillIndexBuffer(IndexBuffer * vertexBuffer, long long size, const void * data) = 0;
+    
     /// Set an index buffer as active for subsequent draw commands
     virtual void SetIndexBuffer(IndexBuffer *indexBuffer) = 0;
 
