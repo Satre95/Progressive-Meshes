@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
 //            auto delta = now - prevFrameTime;
 
 //            if(delta.count() > 500.0) {
-//                aMesh->CollapseLeastError();
+//                aMesh->Downscale();
 //                aMesh->UpdateBuffers(*renderDevice);
 //                prevFrameTime = now;
 //            }
@@ -130,15 +130,37 @@ int main(int argc, char *argv[]) {
 
 static void keyboard_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
 
+	unsigned int stepCount = 50;
+
+	// Perform stepCount number of edge collapses
 	if (key == GLFW_KEY_EQUAL && action == GLFW_PRESS) {
 
 		for (auto aMesh : aModel->GetMeshes()) {
 
-			unsigned int numCollapses = 100;
-			for (unsigned int i = 0; i < numCollapses; i++) {
-				aMesh->CollapseLeastError();
-				aMesh->UpdateBuffers(*renderDevice);
+			bool performedOp = false;
+			for (unsigned int i = 0; i < stepCount; i++) {
+				bool singlePerformedOp = aMesh->Upscale();
+				if (singlePerformedOp)	aMesh->UpdateBuffers(*renderDevice);  
+				performedOp = performedOp || singlePerformedOp;
 			}
+			if (performedOp)	std::cout << "Performed Upscale" << std::endl;
+
+		}
+
+	}
+	
+	// Restore stepCount number of edge collapses
+	if (key == GLFW_KEY_MINUS && action == GLFW_PRESS) {
+
+		for (auto aMesh : aModel->GetMeshes()) {
+
+			bool performedOp = false;
+			for (unsigned int i = 0; i < stepCount; i++) {
+				bool singlePerformedOp = aMesh->Downscale();
+				if (singlePerformedOp)	aMesh->UpdateBuffers(*renderDevice);
+				performedOp = performedOp || singlePerformedOp;
+			}
+			if (performedOp)	std::cout << "Performed Downscale" << std::endl;
 
 		}
 
@@ -147,9 +169,7 @@ static void keyboard_callback(GLFWwindow* window, int key, int scancode, int act
 	//toggle print statements
 	if (key == GLFW_KEY_P && action == GLFW_PRESS) {
 
-		for (auto aMesh : aModel->GetMeshes()) {
-			aMesh->PrintStatements = !aMesh->PrintStatements;
-		}
+		ProgMesh::sPrintStatements = !ProgMesh::sPrintStatements;
 
 	}
 

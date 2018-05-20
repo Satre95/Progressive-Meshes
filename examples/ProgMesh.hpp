@@ -38,12 +38,14 @@ public:
 	glm::mat4 ComputeQuadric(Vertex * aVertex) const;
 	void EdgeCollapse(Pair* collapsePair);
 	void TestEdgeCollapse(unsigned int v0, unsigned int v1);
-	void CollapseLeastError();
+	bool Downscale();
+	bool Upscale();
+	//void 
 	void GenerateNormals();
     
     void UpdateBuffers(starforge::RenderDevice & renderDevice);
 
-	bool PrintStatements = false;
+	static bool sPrintStatements;
 private:
 
     /// Computes initial quadrics and pairs and sorts the latter by smallest error
@@ -56,6 +58,10 @@ private:
 	std::vector<Vertex* > UpdateEdgesAndQuadrics(Vertex * v0, Vertex * v1, Vertex & newVertex, Decimation & dec);
 	void UpdatePairs(Vertex * v0, Vertex * v1, Vertex & newVertex, std::vector<Vertex* > neighbors, Decimation & dec);
     
+	void RecreateFaces(Decimation & decimation);
+	void RecreateEdgesAndQuadrics(Decimation & decimation);
+	void RecreatePairs(Decimation & decimation);
+
     /// The list of decimation operations that have occurred
     std::stack<Decimation> mDecimations;
     
