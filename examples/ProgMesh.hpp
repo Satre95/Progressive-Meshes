@@ -9,6 +9,7 @@
 #include <iostream>
 #include <stack>
 #include <memory>
+#include <atomic>
 #include "Geometry.hpp"
 #include "RenderDevice.hpp"
 #include "Decimation.hpp"
@@ -19,9 +20,10 @@
 class ProgMesh
 {
 public:
-	ProgMesh() = default;
+	ProgMesh();
 	//ProgMesh(std::vector<Vertex> & _verts, std::unordered_set<Face> & _faces);
     ProgMesh(std::vector<Vertex> & _verts, std::vector<uint32_t > & _indices);
+    ProgMesh(const ProgMesh & other);
     ~ProgMesh();
 
 	const glm::mat4 & GetModelMatrix() const { return  mModelMatrix; }
@@ -40,11 +42,11 @@ public:
 	void TestEdgeCollapse(unsigned int v0, unsigned int v1);
 	bool Downscale();
 	bool Upscale();
-	//void 
 	void GenerateNormals();
     
     void UpdateBuffers(starforge::RenderDevice & renderDevice);
 
+    void Animate(double delta_t);
 	static bool sPrintStatements;
 private:
 
@@ -61,6 +63,9 @@ private:
 	void RecreateFaces(Decimation & decimation);
 	void RecreateEdgesAndQuadrics(Decimation & decimation);
 	void RecreatePairs(Decimation & decimation);
+    
+    /// Called by Animate() removes animation that are completed
+    void CheckAnimations();
 
     /// The list of decimation operations that have occurred
     std::stack<Decimation> mDecimations;
@@ -88,7 +93,17 @@ private:
 	// map from two vertices to iterator that points into mPairs
 	// this allows access and updating of mPairs, given the two verticies that make up the pair
 	std::unordered_map<std::pair<Vertex*, Vertex*>, std::multimap<float, Pair>::iterator> mEdgeToPair;
+    
+    /// Tracks vertices that are currently being moved for geomorphing animation
+    /// Stores the start and end positions of the vertices
+    std::unordered_map<Vertex *, std::pair<glm::vec3, glm::vec3>> mVerticesInMotion;
 
+    /// Associates each vertex in motion with it's normalized time value
+    std::unordered_map<Vertex *, double> mVertexTime;
+    
+    /// Flag the signifies whether an operation (including animation) is in progress.
+    std::atomic_bool mOpInProgress;
+    
 	glm::mat4 mModelMatrix;
 
 	/// The GPU buffers are managed by the render device.

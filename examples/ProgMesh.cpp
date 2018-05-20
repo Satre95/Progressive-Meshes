@@ -18,8 +18,11 @@ bool ProgMesh::sPrintStatements = false;
 //	GenerateIndicesFromFaces();
 //}
 
+ProgMesh::ProgMesh(): mOpInProgress(false) {}
+
 ProgMesh::ProgMesh(std::vector<Vertex> & _verts, std::vector<uint32_t > & _indices) :
-mIndices(_indices) {
+mIndices(_indices),
+mOpInProgress(false) {
     mVertices.reserve(_verts.size());
     for (Vertex & aVert : _verts) {
         Vertex * newVert = new Vertex(aVert);
@@ -28,6 +31,10 @@ mIndices(_indices) {
 	for (int i = 0; i < _indices.size(); i+=3) {
 		mFaces.insert(new Face(mVertices.at(_indices.at(i)), mVertices.at(_indices.at(i+1)), mVertices.at(_indices.at(i+2))));
 	}
+}
+
+ProgMesh::ProgMesh(const ProgMesh & other): mOpInProgress(false) {
+    //TODO: Implement proper copy constructor.
 }
 
 ProgMesh::~ProgMesh() {
@@ -664,12 +671,40 @@ void ProgMesh::RecreateEdgesAndQuadrics(Decimation & decimation) {
 }
 
 void ProgMesh::RecreatePairs(Decimation & decimation) {
-
 	mPairs.clear();
 	mEdgeToPair.clear();
 	PreparePairs();
-
 }
 
+void ProgMesh::Animate(double delta_t) {
+    // Update the time values for each vertex in motion
+    for(auto & aVertexPtr: mVerticesInMotion) {
+        double time = mVertexTime.at(aVertexPtr.first);
+        mVertexTime.erase(aVertexPtr.first);
+        time += delta_t;
+        mVertexTime.insert(std::make_pair(aVertexPtr.first, time));
+    }
+    
+    // Perform the interpolation translation
+    for(auto & aVertexPtr: mVerticesInMotion) {
+        double time = mVertexTime.at(aVertexPtr.first);
+        auto newPos = glm::smoothstep(glm::vec3(aVertexPtr.second.first),
+                                      glm::vec3(aVertexPtr.second.second),
+                                      glm::vec3(time)
+                                      );
+        aVertexPtr.first->mPos = glm::vec4(newPos, 1.f);
+    }
+    
+    CheckAnimations();
+}
 
+void ProgMesh::CheckAnimations() {
+    // If any vertex's time value is >= 1.0, it no longer needs to animate
+    for (auto itr = mVertexTime.begin(); itr != mVertexTime.end();) {
+        if (itr->second >= 1.0) {
+            itr = mVertexTime.erase(itr);
+            mVerticesInMotion.erase(itr->first);
+        } else itr++;
+    }
+}
 
