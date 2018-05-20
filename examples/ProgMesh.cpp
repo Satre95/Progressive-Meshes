@@ -276,7 +276,6 @@ void ProgMesh::EdgeCollapse(Pair* collapsePair) {
     mVertices.erase(std::remove_if(mVertices.begin(), mVertices.end(), [v0, v1] (Vertex *& v) {
         return (*v == *v0) || (*v == *v1);
     }), mVertices.end());
-    v0 = nullptr; v1 = nullptr;
 
 	// 4. Update Pairs
 	UpdatePairs(v0, v1, *vNew, neighbors, decimation);
@@ -290,13 +289,32 @@ void ProgMesh::EdgeCollapse(Pair* collapsePair) {
 }
 
 bool ProgMesh::Downscale() {
-	if (mPairs.empty()) return false;
+	if (mPairs.empty() || mOpInProgress) return false;
     
-    auto itr = mPairs.begin();
-    if (sPrintStatements) std::cout << "Collapsing pair: " << itr->second.v0 << ", " << itr->second.v1 << std::endl;
-    EdgeCollapse(&(itr->second));
-    if (sPrintStatements) PrintConnectivity(std::cout);
-
+    mOpInProgress = true;
+    
+    // First check if we had previously schedule a collapse.
+    if(mScheduledCollapse != nullptr) {
+        if (sPrintStatements) std::cout << "Collapsing pair: " << mScheduledCollapse->v0 << ", " << mScheduledCollapse->v1 << std::endl;
+        EdgeCollapse(mScheduledCollapse);
+        if (sPrintStatements) PrintConnectivity(std::cout);
+        mScheduledCollapse = nullptr;
+        mOpInProgress = false;
+    }
+    // If not, start the animation and schdule it for later.
+    else {
+        mScheduledCollapse =  &(mPairs.begin()->second);
+        Vertex* v0 = mScheduledCollapse->v0;
+        Vertex* v1 = mScheduledCollapse->v1;
+        
+        glm::vec3 start0(v0->mPos);
+        glm::vec3 start1(v1->mPos);
+        glm::vec3 end = mScheduledCollapse->CalcOptimal().mPos;
+        mVerticesInMotion.insert(std::make_pair(v0, std::make_pair(start0, end)));
+        mVerticesInMotion.insert(std::make_pair(v1, std::make_pair(start1, end)));
+        mVertexTime.insert(std::make_pair(v0, 0.0));
+        mVertexTime.insert(std::make_pair(v1, 0.0));
+    }
 	return true;
 }
 
@@ -701,8 +719,8 @@ void ProgMesh::Animate(double delta_t, starforge::RenderDevice & renderDevice) {
         Vertex * vertex = aVertexPath.first;
         
         double time = mVertexTime.at(vertex);
-        time += delta_t;
-//        time += 0.01;
+//        time = glm::clamp(time + delta_t, 0.0, 1.0);
+        time = glm::clamp(time + 0.1, 0.0, 1.0);
         mVertexTime.at(vertex) = time;
     }
     

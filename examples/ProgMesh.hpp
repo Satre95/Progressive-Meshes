@@ -104,6 +104,9 @@ private:
     /// Flag the signifies whether an operation (including animation) is in progress.
     std::atomic_bool mOpInProgress;
     
+    /// Holds a vertex pair whose collapse has been scheduled.
+    Pair * mScheduledCollapse = nullptr;
+    
 	glm::mat4 mModelMatrix;
 
 	/// The GPU buffers are managed by the render device.

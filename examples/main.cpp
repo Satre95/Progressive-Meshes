@@ -6,6 +6,7 @@
 #include <ratio>
 
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/glm.hpp>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -19,7 +20,10 @@
 static void keyboard_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 ProgModelRef aModel;
 starforge::RenderDevice *renderDevice;
-unsigned int opCount = 50;
+unsigned int opCount = 200;
+
+bool downScale = true;
+bool continuous = false;
 
 int main(int argc, char *argv[]) {
     if(argc <= 1) {
@@ -85,6 +89,7 @@ int main(int argc, char *argv[]) {
         auto delta = std::chrono::duration_cast<std::chrono::microseconds>( now - prevFrameTime );
         auto delta_t = delta.count() * 10e-6f;
         
+        
         renderDevice->Clear(0.2f, 0.3f, 0.3f);
         renderDevice->SetPipeline(pipeline);
         glm::mat4 arcball, view, projection;
@@ -95,6 +100,13 @@ int main(int argc, char *argv[]) {
         uProjectionParam->SetAsMat4(glm::value_ptr(projection));
 
         for(ProgMeshRef aMesh: aModel->GetMeshes()) {
+            if(continuous) {
+                if (downScale) {
+                    aMesh->Downscale();
+                } else {
+                    aMesh->Upscale();
+                }
+            }
             
             aMesh->Animate(delta_t, *renderDevice);
             
@@ -154,13 +166,30 @@ static void keyboard_callback(GLFWwindow* window, int key, int scancode, int act
              if (performedOp) std::cout << "Performed Downscale" << std::endl;
 		}
 
-	}
+    }
 
 	//toggle print statements
 	if (key == GLFW_KEY_P && action == GLFW_PRESS) {
-
 		ProgMesh::sPrintStatements = !ProgMesh::sPrintStatements;
-
 	}
+    
+    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
+        continuous = !continuous;
+        std::cout << "Continuous animation toggle: " << continuous << std::endl;
+    }
+    if (key == GLFW_KEY_D && action == GLFW_PRESS) {
+        downScale = !downScale;
+    }
+    
+    if (key == GLFW_KEY_LEFT_BRACKET && action == GLFW_PRESS) {
+        opCount = glm::clamp(int(opCount - 50), 1, 500);
+        std::cout << "Op count: " << opCount << std::endl;
+    }
+    if (key == GLFW_KEY_RIGHT_BRACKET && action == GLFW_PRESS) {
+        opCount = glm::clamp(int(opCount - 50), 1, 500);
+        std::cout << "Op count: " << opCount << std::endl;
+    }
+
+    
 
 }
