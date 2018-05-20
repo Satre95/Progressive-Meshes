@@ -12,11 +12,13 @@ set(GLAD "${GLFW_SOURCE_DIR}/deps/glad/glad.h"
 set(SOURCE_FILES
     main.cpp
     ProgModel.cpp
-    ProgMesh.cpp)
+    ProgMesh.cpp
+    )
 set(HEADER_FILES
     ProgModel.hpp
     ProgMesh.hpp
-    Geometry.hpp)
+    Geometry.hpp
+    Decimation.hpp)
 
 add_executable(ProgressiveMeshes ${SOURCE_FILES} ${HEADER_FILES} ${GLAD})
 

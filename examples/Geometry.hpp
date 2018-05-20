@@ -180,3 +180,5 @@ inline bool operator==(const Face & lhs, const Face & rhs) {
         && (*(lhs.mVertices[1]) == *(rhs.mVertices[1]))
         && (*(lhs.mVertices[2]) == *(rhs.mVertices[2]));
 }
+
+typedef std::pair<Vertex *, Vertex*> Edge;
