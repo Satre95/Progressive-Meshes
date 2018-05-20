@@ -289,7 +289,7 @@ void ProgMesh::EdgeCollapse(Pair* collapsePair) {
 
 }
 
-bool ProgMesh::Downscale() {
+bool ProgMesh::Downscale(size_t numOps) {
 
 	if (mPairs.empty()) return false;
 
@@ -556,36 +556,50 @@ void ProgMesh::UpdateBuffers(starforge::RenderDevice & renderDevice) {
     AllocateBuffers(renderDevice);
 }
 
-bool ProgMesh::Upscale() {
-
-	if (mDecimations.empty()) return false;
-
-	// Get most recently inserted decimation
-	Decimation decimation = mDecimations.top(); mDecimations.pop();
-
-	// 1. Create and reinsert faces into ajacencey list
-	RecreateFaces(decimation);
-
-	// 2. Create and reinsert edges
-	RecreateEdgesAndQuadrics(decimation);
-
-	// 3. Create and update pairs
-	RecreatePairs(decimation);
-
-	// 4. Delete vNew from master vertex list
-	Vertex* vNew = decimation.vNew;
-	mVertices.erase(std::remove_if(mVertices.begin(), mVertices.end(), [vNew](Vertex *& v) {
-		return (*v == *vNew);
-	}), mVertices.end());
-	delete decimation.vNew;
-
-	// 5. Reinsert v0 and v1 into the master vertex list
-	mVertices.push_back(decimation.v0);
-	mVertices.push_back(decimation.v1);
-	
-	// 5. Regenerate indicies for update
-	GenerateIndicesFromFaces();
-
+bool ProgMesh::Upscale(size_t numOps) {
+    if (mDecimations.empty() || mOpInProgress) return false;
+    
+    numOps = (mDecimations.size() < numOps) ? mDecimations.size() : numOps;
+    
+    for (size_t i = 0; i < numOps; i++) {
+        // For Upscale, perform the operation first, then do the animation
+        mOpInProgress = true;
+        
+        // Get most recently inserted decimation
+        Decimation decimation = mDecimations.top(); mDecimations.pop();
+        
+        // 1. Create and reinsert faces into ajacencey list
+        RecreateFaces(decimation);
+        
+        // 2. Create and reinsert edges
+        RecreateEdgesAndQuadrics(decimation);
+        
+        // 3. Create and update pairs
+        RecreatePairs(decimation);
+        
+        // 4. Delete vNew from master vertex list
+        Vertex* vNew = decimation.vNew;
+        mVertices.erase(std::remove_if(mVertices.begin(), mVertices.end(), [vNew](Vertex *& v) {
+            return (*v == *vNew);
+        }), mVertices.end());
+        glm::vec3 startPos = decimation.vNew->mPos;
+        delete decimation.vNew;
+        
+        // 5. Reinsert v0 and v1 into the master vertex list
+        mVertices.push_back(decimation.v0);
+        mVertices.push_back(decimation.v1);
+        
+        // 6. Regenerate indicies for update
+        GenerateIndicesFromFaces();
+        
+        // 7. Setup and schedule the animation
+        auto end_v0 = glm::vec3(decimation.v0->mPos);
+        auto end_v1 = glm::vec3(decimation.v1->mPos);
+        mVerticesInMotion.insert(std::make_pair(decimation.v0, std::make_pair(startPos, end_v0)));
+        mVerticesInMotion.insert(std::make_pair(decimation.v1, std::make_pair(startPos, end_v1)));
+        mVertexTime.insert(std::make_pair(decimation.v0, 0.0));
+        mVertexTime.insert(std::make_pair(decimation.v1, 0.0));
+    }
 	return true;
 
 }
@@ -706,5 +720,7 @@ void ProgMesh::CheckAnimations() {
             mVerticesInMotion.erase(itr->first);
         } else itr++;
     }
+    
+    mOpInProgress = !(mVerticesInMotion.empty());
 }
 

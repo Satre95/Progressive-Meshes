@@ -19,6 +19,7 @@
 static void keyboard_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 ProgModelRef aModel;
 starforge::RenderDevice *renderDevice;
+unsigned int opCount = 50;
 
 int main(int argc, char *argv[]) {
     if(argc <= 1) {
@@ -129,22 +130,14 @@ int main(int argc, char *argv[]) {
 }
 
 static void keyboard_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-
-	unsigned int stepCount = 50;
-
 	// Perform stepCount number of edge collapses
 	if (key == GLFW_KEY_EQUAL && action == GLFW_PRESS) {
 
 		for (auto aMesh : aModel->GetMeshes()) {
-
-			bool performedOp = false;
-			for (unsigned int i = 0; i < stepCount; i++) {
-				bool singlePerformedOp = aMesh->Upscale();
-				if (singlePerformedOp)	aMesh->UpdateBuffers(*renderDevice);  
-				performedOp = performedOp || singlePerformedOp;
-			}
-			if (performedOp)	std::cout << "Performed Upscale" << std::endl;
-
+            if(aMesh->Upscale(opCount)) {
+                aMesh->UpdateBuffers(*renderDevice);
+                std::cout << "Performed Upscale" << std::endl;
+            }
 		}
 
 	}
@@ -153,14 +146,10 @@ static void keyboard_callback(GLFWwindow* window, int key, int scancode, int act
 	if (key == GLFW_KEY_MINUS && action == GLFW_PRESS) {
 
 		for (auto aMesh : aModel->GetMeshes()) {
-
-			bool performedOp = false;
-			for (unsigned int i = 0; i < stepCount; i++) {
-				bool singlePerformedOp = aMesh->Downscale();
-				if (singlePerformedOp)	aMesh->UpdateBuffers(*renderDevice);
-				performedOp = performedOp || singlePerformedOp;
-			}
-			if (performedOp)	std::cout << "Performed Downscale" << std::endl;
+            if (aMesh->Downscale(opCount)) {
+                aMesh->UpdateBuffers(*renderDevice);
+                std::cout << "Performed Downscale" << std::endl;
+            }
 
 		}
 

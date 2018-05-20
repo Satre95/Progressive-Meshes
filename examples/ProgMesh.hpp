@@ -40,8 +40,8 @@ public:
 	glm::mat4 ComputeQuadric(Vertex * aVertex) const;
 	void EdgeCollapse(Pair* collapsePair);
 	void TestEdgeCollapse(unsigned int v0, unsigned int v1);
-	bool Downscale();
-	bool Upscale();
+	bool Downscale(size_t numOps = 50);
+	bool Upscale(size_t numOps = 50);
 	void GenerateNormals();
     
     void UpdateBuffers(starforge::RenderDevice & renderDevice);
