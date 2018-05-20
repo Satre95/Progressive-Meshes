@@ -81,6 +81,10 @@ int main(int argc, char *argv[]) {
 
     // Main run loop
     while(platform::PollPlatformWindow(window)) {
+        auto now = std::chrono::steady_clock::now();
+        auto delta = std::chrono::duration_cast<std::chrono::microseconds>( now - prevFrameTime );
+        auto delta_t = delta.count() * 10e-6f;
+        
         renderDevice->Clear(0.2f, 0.3f, 0.3f);
         renderDevice->SetPipeline(pipeline);
         glm::mat4 arcball, view, projection;
@@ -91,20 +95,14 @@ int main(int argc, char *argv[]) {
         uProjectionParam->SetAsMat4(glm::value_ptr(projection));
 
         for(ProgMeshRef aMesh: aModel->GetMeshes()) {
+            
+            aMesh->Animate(delta_t, *renderDevice);
+            
             auto & modelMat = aMesh->GetModelMatrix();
             uModelParam->SetAsMat4(glm::value_ptr(modelMat));
 
             glm::mat3 normMat = glm::mat3(glm::transpose(glm::inverse(modelMat * arcball)));
             uNormalMatParam->SetAsMat3(glm::value_ptr(normMat));
-
-//            auto now = std::chrono::steady_clock::now();
-//            auto delta = now - prevFrameTime;
-
-//            if(delta.count() > 500.0) {
-//                aMesh->Downscale();
-//                aMesh->UpdateBuffers(*renderDevice);
-//                prevFrameTime = now;
-//            }
 
             uUseUniformColorParam->SetAsBool(false);
             uComputeShadingParam->SetAsBool(true);
@@ -115,10 +113,10 @@ int main(int argc, char *argv[]) {
             uComputeShadingParam->SetAsBool(false);
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             aMesh->Draw(*renderDevice);
-            
         }
 
         platform::PresentPlatformWindow(window);
+        prevFrameTime = now;
     }
 
     renderDevice->DestroyPipeline(pipeline);
@@ -132,25 +130,28 @@ int main(int argc, char *argv[]) {
 static void keyboard_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
 	// Perform stepCount number of edge collapses
 	if (key == GLFW_KEY_EQUAL && action == GLFW_PRESS) {
-
 		for (auto aMesh : aModel->GetMeshes()) {
-            if(aMesh->Upscale(opCount)) {
+            bool performedOp = false;
+            for (size_t i = 0; i < opCount; i++) {
+                performedOp = performedOp || aMesh->Upscale();
                 aMesh->UpdateBuffers(*renderDevice);
-                std::cout << "Performed Upscale" << std::endl;
             }
+            if (performedOp) std::cout << "Performed Upscale" << std::endl;
+            
 		}
 
 	}
 	
 	// Restore stepCount number of edge collapses
 	if (key == GLFW_KEY_MINUS && action == GLFW_PRESS) {
-
 		for (auto aMesh : aModel->GetMeshes()) {
-            if (aMesh->Downscale(opCount)) {
+            bool performedOp = false;
+            for (size_t i = 0; i < opCount; i++) {
+                bool temp = aMesh->Downscale();
+                performedOp = performedOp || temp;
                 aMesh->UpdateBuffers(*renderDevice);
-                std::cout << "Performed Downscale" << std::endl;
             }
-
+             if (performedOp) std::cout << "Performed Downscale" << std::endl;
 		}
 
 	}

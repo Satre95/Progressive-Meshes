@@ -289,14 +289,13 @@ void ProgMesh::EdgeCollapse(Pair* collapsePair) {
 
 }
 
-bool ProgMesh::Downscale(size_t numOps) {
-
+bool ProgMesh::Downscale() {
 	if (mPairs.empty()) return false;
-
-	auto itr = mPairs.begin();
-	if (sPrintStatements) std::cout << "Collapsing pair: " << itr->second.v0 << ", " << itr->second.v1 << std::endl;
-	EdgeCollapse(&(itr->second));
-	if (sPrintStatements) PrintConnectivity(std::cout);
+    
+    auto itr = mPairs.begin();
+    if (sPrintStatements) std::cout << "Collapsing pair: " << itr->second.v0 << ", " << itr->second.v1 << std::endl;
+    EdgeCollapse(&(itr->second));
+    if (sPrintStatements) PrintConnectivity(std::cout);
 
 	return true;
 }
@@ -553,53 +552,59 @@ void ProgMesh::UpdatePairs(Vertex * v0, Vertex * v1, Vertex & newVertex, std::ve
 
 /// After all operations for a particular edge collapse have been performed, need to update the GPU buffers
 void ProgMesh::UpdateBuffers(starforge::RenderDevice & renderDevice) {
-    AllocateBuffers(renderDevice);
+    // Make a local contiguous array to copy verts into GPU buffer
+    std::vector<Vertex> localVerts;
+    localVerts.reserve(mVertices.size());
+    for (auto & vertPtr : mVertices) {
+        localVerts.push_back(*vertPtr);
+    }
+    
+    renderDevice.FillVertexBuffer(mVBO, localVerts.size() * sizeof(localVerts.front()), localVerts.data());
+    renderDevice.FillIndexBuffer(mIBO, mIndices.size() * sizeof(mIndices.front()), mIndices.data());
 }
 
-bool ProgMesh::Upscale(size_t numOps) {
+bool ProgMesh::Upscale() {
     if (mDecimations.empty() || mOpInProgress) return false;
+    // For Upscale, perform the operation first, then do the animation
+    mOpInProgress = true;
     
-    numOps = (mDecimations.size() < numOps) ? mDecimations.size() : numOps;
+    // Get most recently inserted decimation
+    Decimation decimation = mDecimations.top(); mDecimations.pop();
     
-    for (size_t i = 0; i < numOps; i++) {
-        // For Upscale, perform the operation first, then do the animation
-        mOpInProgress = true;
-        
-        // Get most recently inserted decimation
-        Decimation decimation = mDecimations.top(); mDecimations.pop();
-        
-        // 1. Create and reinsert faces into ajacencey list
-        RecreateFaces(decimation);
-        
-        // 2. Create and reinsert edges
-        RecreateEdgesAndQuadrics(decimation);
-        
-        // 3. Create and update pairs
-        RecreatePairs(decimation);
-        
-        // 4. Delete vNew from master vertex list
-        Vertex* vNew = decimation.vNew;
-        mVertices.erase(std::remove_if(mVertices.begin(), mVertices.end(), [vNew](Vertex *& v) {
-            return (*v == *vNew);
-        }), mVertices.end());
-        glm::vec3 startPos = decimation.vNew->mPos;
-        delete decimation.vNew;
-        
-        // 5. Reinsert v0 and v1 into the master vertex list
-        mVertices.push_back(decimation.v0);
-        mVertices.push_back(decimation.v1);
-        
-        // 6. Regenerate indicies for update
-        GenerateIndicesFromFaces();
-        
-        // 7. Setup and schedule the animation
-        auto end_v0 = glm::vec3(decimation.v0->mPos);
-        auto end_v1 = glm::vec3(decimation.v1->mPos);
-        mVerticesInMotion.insert(std::make_pair(decimation.v0, std::make_pair(startPos, end_v0)));
-        mVerticesInMotion.insert(std::make_pair(decimation.v1, std::make_pair(startPos, end_v1)));
-        mVertexTime.insert(std::make_pair(decimation.v0, 0.0));
-        mVertexTime.insert(std::make_pair(decimation.v1, 0.0));
-    }
+    // 1. Create and reinsert faces into ajacencey list
+    RecreateFaces(decimation);
+    
+    // 2. Create and reinsert edges
+    RecreateEdgesAndQuadrics(decimation);
+    
+    // 3. Create and update pairs
+    RecreatePairs(decimation);
+    
+    // 4. Delete vNew from master vertex list
+    Vertex* vNew = decimation.vNew;
+    mVertices.erase(std::remove_if(mVertices.begin(), mVertices.end(), [vNew](Vertex *& v) {
+        return (*v == *vNew);
+    }), mVertices.end());
+    glm::vec3 startPos = decimation.vNew->mPos;
+    delete decimation.vNew;
+    
+    // 5. Reinsert v0 and v1 into the master vertex list
+    mVertices.push_back(decimation.v0);
+    mVertices.push_back(decimation.v1);
+    
+    // 6. Setup and schedule the animation
+    auto end_v0 = glm::vec3(decimation.v0->mPos);
+    auto end_v1 = glm::vec3(decimation.v1->mPos);
+    mVerticesInMotion.insert(std::make_pair(decimation.v0, std::make_pair(startPos, end_v0)));
+    mVerticesInMotion.insert(std::make_pair(decimation.v1, std::make_pair(startPos, end_v1)));
+    mVertexTime.insert(std::make_pair(decimation.v0, 0.0));
+    mVertexTime.insert(std::make_pair(decimation.v1, 0.0));
+    decimation.v0->mPos = glm::vec4(startPos, 1.f);
+    decimation.v1->mPos = glm::vec4(startPos, 1.f);
+    
+    // 7. Regenerate indicies for update
+    GenerateIndicesFromFaces();
+    
 	return true;
 
 }
@@ -690,37 +695,46 @@ void ProgMesh::RecreatePairs(Decimation & decimation) {
 	PreparePairs();
 }
 
-void ProgMesh::Animate(double delta_t) {
+void ProgMesh::Animate(double delta_t, starforge::RenderDevice & renderDevice) {
     // Update the time values for each vertex in motion
-    for(auto & aVertexPtr: mVerticesInMotion) {
-        double time = mVertexTime.at(aVertexPtr.first);
-        mVertexTime.erase(aVertexPtr.first);
+    for(auto & aVertexPath: mVerticesInMotion) {
+        Vertex * vertex = aVertexPath.first;
+        
+        double time = mVertexTime.at(vertex);
         time += delta_t;
-        mVertexTime.insert(std::make_pair(aVertexPtr.first, time));
+//        time += 0.01;
+        mVertexTime.at(vertex) = time;
     }
     
     // Perform the interpolation translation
-    for(auto & aVertexPtr: mVerticesInMotion) {
-        double time = mVertexTime.at(aVertexPtr.first);
-        auto newPos = glm::smoothstep(glm::vec3(aVertexPtr.second.first),
-                                      glm::vec3(aVertexPtr.second.second),
-                                      glm::vec3(time)
-                                      );
-        aVertexPtr.first->mPos = glm::vec4(newPos, 1.f);
+    auto vMItr = mVerticesInMotion.begin();
+    while(vMItr != mVerticesInMotion.end()) {
+        Vertex * vertex = vMItr->first;
+        auto & startPos = vMItr->second.first;
+        auto & endPos = vMItr->second.second;
+        
+        double time = mVertexTime.at(vertex);
+        auto newPos = glm::mix(startPos, endPos, time);
+        vertex->mPos = glm::vec4(newPos, 1.f);
+        
+        vMItr++;
     }
+    
+    UpdateBuffers(renderDevice);
     
     CheckAnimations();
 }
 
 void ProgMesh::CheckAnimations() {
-    // If any vertex's time value is >= 1.0, it no longer needs to animate
-    for (auto itr = mVertexTime.begin(); itr != mVertexTime.end();) {
-        if (itr->second >= 1.0) {
-            itr = mVertexTime.erase(itr);
-            mVerticesInMotion.erase(itr->first);
-        } else itr++;
+    for (auto & aVertexPtr : mVertices) {
+        auto searchItr = mVertexTime.find(aVertexPtr);
+        if(searchItr != mVertexTime.end()) {
+            if (searchItr->second >= 1.0) {
+                mVertexTime.erase(aVertexPtr);
+                mVerticesInMotion.erase(aVertexPtr);
+            }
+        }
     }
-    
     mOpInProgress = !(mVerticesInMotion.empty());
 }
 
