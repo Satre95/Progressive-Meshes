@@ -56,7 +56,7 @@ void ProgModel::LoadOFF(std::string const & path) {
     mMeshes.push_back(mesh);
 
 #pragma omp parallel for
-    for (int i = 0; size_t(i) < mMeshes.size(); ++i) {
+    for (size_t i = 0; i < mMeshes.size(); ++i) {
         mMeshes.at(i)->BuildConnectivity();
         mMeshes.at(i)->GenerateNormals();
         mMeshes.at(i)->PreparePairsAndQuadrics();
@@ -87,7 +87,7 @@ void ProgModel::LoadProgModel(const std::string &path) {
 
     // Once all models are loaded, ask them to build their mesh connectivity data structures.
 #pragma omp parallel for
-    for (int i = 0; size_t(i) < mMeshes.size(); ++i) {
+    for (size_t i = 0; i < mMeshes.size(); ++i) {
         mMeshes.at(i)->BuildConnectivity();
 		mMeshes.at(i)->PreparePairsAndQuadrics();
     }
