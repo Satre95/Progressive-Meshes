@@ -8,3 +8,4 @@ All dependencies are included as submodules in the repo. Only CMake, OpenGL, and
 ## Running
 Run the executable `bin/ProgressiveMeshes` from the project root.
 
+See my [blog](https://www.theseventhline.net/2018/05/progressive-meshes/) for detailed explanation.
