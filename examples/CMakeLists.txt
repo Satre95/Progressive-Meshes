@@ -1,6 +1,7 @@
 link_libraries(StarForge glfw)
 
 include_directories(${glfw_INCLUDE_DIRS} "${GLFW_SOURCE_DIR}/deps" "../externals/assimp/include")
+include_directories(${glfw_INCLUDE_DIRS} "${GLFW_SOURCE_DIR}/deps" "../build/externals/assimp/include")
 
 if(MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)

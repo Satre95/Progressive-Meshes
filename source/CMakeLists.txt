@@ -1,4 +1,5 @@
 include_directories("${GLFW_SOURCE_DIR}/deps" "../externals/assimp/include")
+include_directories("${GLFW_SOURCE_DIR}/deps" "../build/externals/assimp/include")
 
 set(HEADER_FILES
     ../include/RenderDevice.hpp ../include/OpenGLRenderDevice.hpp
